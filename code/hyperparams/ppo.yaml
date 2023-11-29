@@ -1,0 +1,17 @@
+hyperparams: 
+  tensorboard_log: "logs/PPO"
+  batch_size: 128
+  n_steps: 2048
+  learning_rate: 0.012449020379473656
+  ent_coef: 4.354016288492392e-05
+  clip_range: 0.4
+  n_epochs: 20
+  gae_lambda: 0.98
+  max_grad_norm: 0.3
+  vf_coef: 0.10575099884098843
+  use_sde: True
+  sde_sample_freq: 64
+  policy_kwargs:
+    net_arch: [256, 256]
+    log_std_init: -3.416365308945077
+    activation_fn: 'relu'

@@ -1,0 +1,234 @@
+<?xml version="1.0" ?>
+<robot name="flexpicker" xmlns:xacro="http://www.ros.org/wiki/xacro">
+ <material name="gripperMaterial">
+        <!-- Dark red like saywer robot -->
+        <color rgba="0.6 0.18 0.18 1.0"/>
+    </material>
+    <material name="schunkGripperMaterial">
+        <color rgba="0.55 0 0.0 1.0"/>
+    </material>
+    <material name="schunkGripperFingerMaterial">
+        <!-- Dark red like saywer robot -->
+        <color rgba="0.83 0.68 0.21 1.0" />
+    </material>
+    <material name="schunkGripperMountMaterial">
+        <!-- Dark red like saywer robot -->
+        <color rgba="0.74 0.74 0.82 1.0"/>
+    </material>
+    <material name="fingerFoamMaterial">
+        <!-- Dark grey -->
+        <color rgba="0.2 0.2 0.2 1.0"/>
+    </material>
+
+ <link name="flexpicker_link_0">
+        <inertial>
+            <origin rpy="0 3.141592653589 0" xyz="-0.1 0 0.07"/>
+            <!--Increase mass from 5 Kg original to provide a stable base to carry the
+                arm.-->
+            <inertia ixx="0.05" ixy="0" ixz="0" iyy="0.06" iyz="0" izz="0.03"/>
+            <mass value="0"/>
+        </inertial>
+ </link>
+ <joint name='x_axis' type='prismatic'>
+  <parent link="flexpicker_link_0"/>
+  <child link="x_link"/>
+  <axis xyz="1 0 0"/>
+  <limit lower="-10" upper="10" effort="1000" velocity="10" />
+  <dynamics damping="0.0" friction="0.0"/>
+ </joint>
+ <link name='x_link'>
+      <inertial>
+        <mass value="3"/>
+        <inertia ixx="1"  ixy="0"  ixz="0" iyy="1" iyz="0" izz="1" />
+      </inertial>
+ </link>
+ <joint name='y_axis' type='prismatic'>
+  <parent link="x_link"/>
+  <child link="y_link"/>
+  <axis xyz="0 1 0"/>
+  <limit lower="-10" upper="10" effort="1000" velocity="10" />
+  <dynamics damping="0.0" friction="0.0"/>
+ </joint>
+  <link name='y_link'>
+      <inertial>
+        <mass value="3"/>
+        <inertia ixx="1"  ixy="0"  ixz="0" iyy="1" iyz="0" izz="1" />
+      </inertial>
+ </link>
+  <joint name='z_axis' type='prismatic'>
+  <parent link="y_link"/>
+  <child link="z_link"/>
+  <axis xyz="0 0 1"/>
+  <limit lower="-10" upper="10" effort="1000" velocity="10" />
+  <dynamics damping="0.0" friction="0.0"/>
+ </joint>
+  <link name='z_link'>
+      <inertial>
+        <mass value="3"/>
+        <inertia ixx="1"  ixy="0"  ixz="0" iyy="1" iyz="0" izz="1" />
+      </inertial>
+ </link>
+ <joint name='base_cyl_joint' type="revolute">
+  <parent link="z_link"/>
+  <child link="base_cyl_link"/>
+  <axis xyz="0 0 1"/>
+  <limit lower="-100" upper="100" effort="300" velocity="1200" />
+  <dynamics damping="0.0" friction="0.0"/>
+  <origin xyz="0 0 0.07"/>
+ </joint>
+ <link name="base_cyl_link">
+        <inertial>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <inertia ixx="3.578111313725209e-08" ixy="1.9645539431978182e-25" ixz="-3.148195961317329e-26" iyy="3.578111326283281e-08" iyz="2.2037820490974163e-24" izz="3.0665489403698024e-08"/>
+            <mass value="0.02"/>
+        </inertial>
+        <visual name='cyl_visual'>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <cylinder radius="0.025" length="0.05"/>
+            </geometry>
+            <material name="schunkGripperMountMaterial"/>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <cylinder radius="0.025" length="0.05"/>
+            </geometry>
+        </collision>
+ </link>
+ <joint name='cylinder_to_gripper' type='fixed'>
+        <parent link="base_cyl_link"/>
+        <child link="gripper_base"/>
+        <origin xyz="0 0 0.025"/>
+ </joint>
+ <joint name='coupler_to_realsense_rgb' type='fixed'>
+ 		<parent link="gripper_base"/>
+        <child link="realsense_rgb"/>
+<!--        <origin xyz="-0.110572 0.0325 -0.036494" rpy="0 0 0"/>-->
+        <origin xyz="-0.109951 0.027587 0.0519427" rpy="0 0 0" />
+ </joint>
+ <link name="realsense_rgb">
+         <inertial>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <inertia ixx="0.0000000001" ixy="0" ixz="0" iyy="0.0000000001" iyz="0" izz="0.0000000001"/>
+            <mass value="0.0001"/>
+        </inertial>
+<!--        <visual name='realsense_link_visual'>-->
+<!--            <origin xyz="0 0 0" rpy="0 0 0" />-->
+<!--            <geometry>-->
+<!--                <box size="0.002 0.002 0.002" />-->
+<!--            </geometry>-->
+<!--            <material name="rs">-->
+<!--                <color rgba="1 0.0 0.0 1"/>-->
+<!--            </material>-->
+<!--        </visual>-->
+ </link>
+ <!-- Base of end effector -->
+ <link name="gripper_base">
+        <inertial>
+            <origin xyz="0.0000126 0.0000128 0.0598407" rpy="0 0 0"/>
+            <inertia ixx="0.00000102192" ixy="0.00000000008" ixz="0.00000000015" iyy="0.00000086436" iyz="0.00000000019" izz="0.00000070256"/>
+            <mass value="0.800"/>
+        </inertial>
+        <visual>
+            <origin rpy="0 0 1.57079632679" xyz="0 0 0"/>
+            <geometry>
+                <mesh filename="package://meshes/meshes_EGH_gripper/gripper_body_EGH.obj"/>
+            </geometry>
+            <material name="schunkGripperMaterial"/>
+        </visual>
+        <collision>
+            <origin rpy="0 0 1.57079632679" xyz="0 0 0"/>
+            <geometry>
+                <mesh filename="package://meshes/meshes_EGH_gripper/gripper_body_EGH_vhacd.obj"/>
+            </geometry>
+            <material name="schunkGripperMaterial"/>
+        </collision>
+ </link>
+
+    <!-- Joint to define the Tool Control Point relatively to the gripper base -->
+    <joint name="tool_control_point" type="fixed">
+        <origin rpy="0 3.141592653589793 0" xyz="0 0 0.197478"/>
+        <parent link="gripper_base"/>
+        <child link="gripper"/>
+    </joint>
+    <!-- Gripper Tool control point -->
+    <link name="gripper">
+        <inertial>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <inertia ixx="0.0000000001" ixy="0" ixz="0" iyy="0.0000000001" iyz="0" izz="0.0000000001"/>
+            <mass value="0.0001"/>
+        </inertial>
+    </link>
+<!-- Gripper finger joints -->
+    <joint name="l_gripper_l_finger_joint" type="prismatic">
+        <origin rpy="0 0 0" xyz="0 0 0.1082"/>
+        <axis xyz="0 1 0"/>
+        <parent link="gripper_base"/>
+        <child link="l_gripper_l_finger"/>
+        <limit effort="25.0" lower="-0.04" upper="0.04" velocity="2.0"/>
+       <dynamics damping="0.7" friction="0.0"/>
+    </joint>
+    <joint name="l_gripper_r_finger_joint" type="prismatic">
+        <origin rpy="0 0 0" xyz="0 0 0.1082"/>
+        <axis xyz="0 1 0"/>
+        <parent link="gripper_base"/>
+        <child link="l_gripper_r_finger"/>
+        <limit effort="25.0" lower="-0.04" upper="0.04" velocity="2.0"/>
+        <mimic joint="l_gripper_l_finger_joint" multiplier="-1.0"/>
+       <dynamics damping="0.7" friction="0.0"/>
+    </joint>
+
+    <!-- Left gripper finger -->
+    <link name="l_gripper_l_finger">
+        <inertial>
+            <origin xyz="-0.0001337 0.0112778 0.0399032" rpy="0 0 0"/>
+            <inertia ixx="0.00000002451" ixy="-0.00000000009" ixz="-0.00000000018" iyy="0.00000002462" iyz="-0.00000000037" izz="0.00000000612"/>
+            <mass value="0.100"/>
+        </inertial>
+        <visual>
+            <origin rpy="0 0 1.57079632679" xyz="0.00025 -0.03 0"/>
+            <geometry>
+                <mesh filename="package://meshes/meshes_EGH_gripper/finger_EGH.obj"/>
+            </geometry>
+            <material name="package://meshes/schunkGripperFingerMaterial"/>
+        </visual>
+        <collision>
+            <origin rpy="0 0 1.57079632679" xyz="0.00025 -0.03 0"/>
+            <geometry>
+                <mesh filename="package://meshes/meshes_EGH_gripper/finger_EGH_shrinked_vhacd.obj"/>
+            </geometry>
+        </collision>
+        <contact>
+            <lateral_friction value="0.9"/>
+            <spinning_friction value="0.01"/>
+        </contact>
+    </link>
+
+    <!-- Right gripper finger -->
+    <link name="l_gripper_r_finger">
+        <inertial>
+            <origin xyz="0.0001337 -0.0112778 0.0399032" rpy="0 0 0"/>
+            <inertia ixx="0.00000002451" ixy="-0.00000000009" ixz="0.00000000018" iyy="0.00000002462" iyz="0.00000000037" izz="0.00000000612"/>
+            <mass value="0.100"/>
+        </inertial>
+        <visual>
+            <origin rpy="0 0 -1.57079632679" xyz="-0.00025 0.03 0"/>
+            <geometry>
+                <mesh filename="package://meshes/meshes_EGH_gripper/finger_EGH.obj"/>
+            </geometry>
+            <material name="package://meshes/schunkGripperFingerMaterial"/>
+        </visual>
+        <collision>
+            <origin rpy="0 0 -1.57079632679" xyz="-0.00025 0.03 0"/>
+            <geometry>
+                <mesh filename="package://meshes/meshes_EGH_gripper/finger_EGH_shrinked_vhacd.obj"/>
+            </geometry>
+        </collision>
+        <contact>
+            <lateral_friction value="0.9"/>
+            <spinning_friction value="0.01"/>
+        </contact>
+    </link>
+</robot>
+

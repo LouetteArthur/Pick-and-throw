@@ -1,0 +1,10 @@
+hyperparams:
+    learning_rate: 0.006643119832737399
+    batch_size: 512
+    tau: 0.02
+    train_freq: 8
+    gradient_steps: 8
+    action_noise: ornstein-uhlenbeck
+    action_noise_std: 0.6727062867919366
+    policy_kwargs: 
+      net_arch: [256, 256]

@@ -1,0 +1,16 @@
+hyperparams:
+  tensorboard_log: "logs/SAC"
+  learning_rate: 0.0015957233286069618
+  batch_size: 16
+  learning_starts: 100
+  train_freq: 4
+  gradient_steps: 16
+  ent_coef: "auto"
+  tau: 0.005
+  target_entropy: 'auto'
+  policy_kwargs: 
+    net_arch: [256, 256]
+    log_std_init: -0.0746039858810521
+  use_sde: True
+  sde_sample_freq: 8
+  gamma: 0.99
