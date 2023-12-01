@@ -38,6 +38,7 @@ class goToBucketAgent(Agent):
         z_release = env.bucket_place_position[2]
         y_target = y_release
         action = np.array([y_release, z_release, 3, y_target])
+        action = env.action_normalizer.normalize(action)
         return action
     
 # class optimAgent(Agent):

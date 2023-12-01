@@ -42,7 +42,7 @@ def agent_control(GUI=False, agent_name='goToBucket', model=None, episodes=10, v
         pbar = tqdm(total=episodes)
     for i in range(1, episodes + 1):
         if verbose:
-            print(f"Episode {i} out of {episodes}")
+            print(f"\nEpisode {i} out of {episodes}")
 
         # run the agent
         terminated = False
@@ -52,7 +52,6 @@ def agent_control(GUI=False, agent_name='goToBucket', model=None, episodes=10, v
             else:
                 action = agent.act(env)
             observation, reward, terminated, info = env.step(action)
-
             success.append(int(info['is_success']))
             rewards.append(reward)
             action_time.append(info['action_time'])
@@ -75,9 +74,9 @@ def agent_control(GUI=False, agent_name='goToBucket', model=None, episodes=10, v
         print(f"Success reward: {success_reward}")
     
     print(f"Success rate: {np.mean(success)} ({np.std(success)})")
-    print(f"Mean reward: {np.mean(rewards)} ({np.std(rewards)})")
-    print(f"Action time: {np.mean(action_time)} ({np.std(action_time)})")
-    print(f"Distance ratio: {np.mean(distance_ratio)} ({np.std(distance_ratio)})")
+    print(f"Mean reward: {np.round(np.mean(rewards),3)} ({np.round(np.std(rewards),3)})")
+    print(f"Action time: {np.round(np.mean(action_time),3)} ({np.round(np.std(action_time), 3)})")
+    print(f"Distance ratio: {np.round(np.mean(distance_ratio),3)} ({np.round(np.std(distance_ratio),3)})")
     if save_data:
         # Create a DataFrame
         df = pd.DataFrame({

@@ -148,6 +148,20 @@ def lin_reg_reward(success, env):
         return np.clip(slope * env.distance_release + interp - env.action_time, 0, 100)
     else:
         return -env.action_time
+    
+class ActionSpaceNormalizer:
+    """
+    Normalizes the action space to [-1, 1]
+    """
+    def __init__(self, low, high):
+        self.low = low
+        self.high = high
+
+    def normalize(self, action):
+        return 2 * (action - self.low) / (self.high - self.low) - 1
+    
+    def denormalize(self, action):
+        return (action + 1) * (self.high - self.low) / 2 + self.low
 
 class PickAndPlaceReward(nn.Module):
     '''
@@ -187,7 +201,8 @@ class PickAndPlaceReward(nn.Module):
                 _, _, done, info = env.step(action)
                 optimizer.zero_grad()
                 action_time = torch.tensor(np.array(info['action_time'], dtype=np.float32)).unsqueeze(0).to(device)
-                loss = loss_fn(self.forward(observation), action_time)
+                pred = self.forward(observation)
+                loss = loss_fn(pred, action_time)
                 losses.append(loss.item())
                 loss.backward()
                 optimizer.step()
@@ -218,7 +233,8 @@ class PickAndPlaceReward(nn.Module):
                 action = agent.act(env)
                 _, _, done, info = env.step(action)
                 action_time = torch.tensor(np.array(info['action_time'], dtype=np.float32)).unsqueeze(0).to(device)
-                error = (abs(self.forward(observation) - action_time)).item()
+                pred = self.forward(observation)
+                error = (abs(pred - action_time)).item()
                 errors.append(error)
             pbar.update(1)
         
@@ -231,7 +247,8 @@ pickAndPlaceReward = PickAndPlaceReward()
 pickAndPlaceReward.load_state_dict(torch.load("models/PaP_reward.pt"))
 def nn_reward(success, env):
     if success:
-        reward = pickAndPlaceReward(torch.tensor(env.init_obs)) - env.action_time
+        pred = pickAndPlaceReward(torch.tensor(env.init_obs))
+        reward = pred - env.action_time
         reward = reward.detach().numpy()[0]
         return reward
     else:

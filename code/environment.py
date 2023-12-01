@@ -72,7 +72,10 @@ class TossingFlexpicker(Env):
         # Set the action space (y_release, z_release, speed, y_target)
         low = np.float32(np.array([-R_WORKSPACE, 0.06, MIN_SPEED_FOR_THROW, -R_WORKSPACE]))
         high = np.float32(np.array([R_WORKSPACE, 0.2, MAX_SPEED_FLEXPICKER, R_WORKSPACE]))
-        self.action_space = Box(low=low, high=high, shape=(4,), dtype=np.float32)
+        self.action_normalizer = utils.ActionSpaceNormalizer(low, high)
+        low_n = self.action_normalizer.normalize(low)
+        high_n = self.action_normalizer.normalize(high)
+        self.action_space = Box(low=low_n, high=high_n, shape=(4,), dtype=np.float32)
 
         # Set the reward function
         self.reward_func = reward_func
@@ -104,15 +107,15 @@ class TossingFlexpicker(Env):
         initial_height_flexpicker = 0.6
         self.robot =  Flexpicker(position=self.cube_init_position[:2] +(initial_height_flexpicker,), orientation=p.getQuaternionFromEuler([0,np.pi,cube_orientation[2]]), GUI=GUI, physicsClient=self._p)
 
-        # create the variables for the toss and the reward associated urdf
-        self.has_thrown = False
-        self.release_position = self.cube_init_position
-        self.distance_cube_bucket = np.round(np.linalg.norm(np.array(self.cube_init_position[:2]) - np.array(self.bucket_pos[:2])), 3)
-        self.init_obs = self.get_observation()
-        self.action_time = 0
-
         self._p.resetDebugVisualizerCamera(cameraDistance=2.5, cameraYaw=-0, cameraPitch=-35, cameraTargetPosition=[0,0,0])
         self.robot.grasp(self.object_id)
+
+        # create the variables for the toss and the reward associated urdf
+        self.has_thrown = False
+        self.init_obs = self.get_observation()
+        self.release_position = self.cube_init_position
+        self.distance_cube_bucket = np.round(np.linalg.norm(np.array(self.init_obs[:2]) - np.array(self.bucket_place_position[:2])), 3)
+        self.action_time = 0
 
     def load_conveyor_and_bucket(self):
         if self.domain_randomization:
@@ -120,7 +123,7 @@ class TossingFlexpicker(Env):
             self.random_y_conveyor = random.uniform(-.5, 0)
             place_position_y = CONVEYOR_WIDTH/2 + 0.1 + self.random_y_conveyor
             place_position_z = 0.15
-            self.bucket_place_position = (place_position_x, place_position_y, place_position_z) 
+            self.bucket_place_position = (place_position_x, place_position_y, place_position_z)
             self.conv_id = self._p.loadURDF("urdf/convoyer.urdf", [0,self.random_y_conveyor,-CONVEYOR_HEIGHT])
         else:
             place_position_x = random.uniform(X_BUCKET_MIN, X_BUCKET_MAX)
@@ -172,6 +175,7 @@ class TossingFlexpicker(Env):
         """
         action: (x_release, z_release, speed, x_target) for End Effector Position Control
         """
+        action = self.action_normalizer.denormalize(action)
         self.action = self.legal_action(action)
 
         # compute the release position
@@ -254,7 +258,7 @@ class TossingFlexpicker(Env):
             for _ in range(10):
                 self.step_simulation()
             reward, terminated = self.get_reward_and_is_terminated()
-        return self.get_observation(), reward, terminated, {"is_success": self.success(), "action_time": self.action_time, "distance_ratio": np.clip(self.distance_release/self.distance_cube_bucket, 0, 1)}
+        return self.get_observation(), reward, terminated, {"is_success": self.success(), "action_time": np.round(self.action_time, 3), "distance_ratio": np.clip(np.round(self.distance_release/self.distance_cube_bucket,2), 0, 1)}
     
 
     def success(self):
@@ -344,14 +348,14 @@ class TossingFlexpicker(Env):
             # Load the robot
             initial_height_flexpicker = 0.6
             self.robot =  Flexpicker(position=self.cube_init_position[:2] +(initial_height_flexpicker,), orientation=self._p.getQuaternionFromEuler([0,np.pi,cube_orientation[2]]), GUI=self.GUI, physicsClient=self._p)
-
-            # create the variables for the toss and the reward associated
-            self.has_thrown = False
-            self.release_position = self.cube_init_position
-            self.distance_cube_bucket = np.round(np.linalg.norm(np.array(self.cube_init_position[:2]) - np.array(self.bucket_pos[:2])), 3)
-            self.init_obs = self.get_observation()
-            self.action_time = 0
             self.robot.grasp(self.object_id)
+
+            # reset the variables for the toss and the reward associated
+            self.has_thrown = False
+            self.init_obs = self.get_observation()
+            self.release_position = self.cube_init_position
+            self.distance_cube_bucket = np.round(np.linalg.norm(np.array(self.init_obs[:2]) - np.array(self.bucket_place_position[:2])), 3)
+            self.action_time = 0
         else:
             # reset the max time step
             self.max_step_simulation = MAX_STEP_SIMULATION
@@ -382,14 +386,13 @@ class TossingFlexpicker(Env):
             # Load the robot
             initial_height_flexpicker = 0.6
             self.robot =  Flexpicker(position=self.cube_init_position[:2] +(initial_height_flexpicker,), orientation=p.getQuaternionFromEuler([0,np.pi,cube_orientation[2]]), GUI=self.GUI, physicsClient=self._p)
-            
-            # reset the variables for the toss and the reward associated
-            self.distance_cube_bucket = np.linalg.norm(np.array(self.cube_init_position[:2]) - np.array(self.bucket_pos[:2]))
-            self.has_thrown = False
-            self.release_position = self.cube_init_position
-            self.distance_cube_bucket = np.round(np.linalg.norm(np.array(self.cube_init_position[:2]) - np.array(self.bucket_pos[:2])), 3)
             self.robot.grasp(self.object_id)
+
+            # reset the variables for the toss and the reward associated
+            self.has_thrown = False
             self.init_obs = self.get_observation()
+            self.release_position = self.cube_init_position
+            self.distance_cube_bucket = np.round(np.linalg.norm(np.array(self.init_obs[:2]) - np.array(self.bucket_place_position[:2])), 3)
             self.action_time = 0
         return self.get_observation()
 

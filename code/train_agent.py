@@ -10,6 +10,7 @@ from environment import TossingFlexpicker
 from agent import UnhandledAgentException
 from wandb.integration.sb3 import WandbCallback
 from yaml.loader import SafeLoader
+from gym.wrappers import RescaleAction
     
 
 if __name__ == '__main__':
