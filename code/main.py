@@ -11,16 +11,12 @@ import matplotlib.pyplot as plt
 from scipy.stats import linregress
 import pandas as pd
 
-def agent_control(GUI=False, agent_name='goToBucket', model=None, episodes=10, verbose=False, reward_function='weighted', seed=None, save_data=None):
-    # load the environment
-    if reward_function not in utils.implemented_rewards.keys():
-        raise utils.UnhandledRewardException("Reward function not implemented")
-    
+def agent_control(GUI=False, agent_name='goToBucket', model=None, episodes=10, verbose=False, reward_name='success', seed=None, save_data=None):
     # fix random seed
     if seed is not None:
-        env = TossingFlexpicker(GUI=GUI, reward_func=utils.implemented_rewards[reward_function], seed=seed)
+        env = TossingFlexpicker(GUI=GUI, reward_name=reward_name, seed=seed)
     else:
-        env = TossingFlexpicker(GUI=GUI, reward_func=utils.implemented_rewards[reward_function])
+        env = TossingFlexpicker(GUI=GUI,  reward_name=reward_name)
 
     # load the agent
     success = []
@@ -104,7 +100,7 @@ if __name__ == '__main__':
     # Model pretrained
     parser.add_argument('-m', '--model', type=str, default=None, help='model to use')
     # reward function
-    parser.add_argument('-r', '--reward', type=str, default="weighted", help='reward function')
+    parser.add_argument('-r', '--reward', type=str, default="success", help='reward function')
     #seed
     parser.add_argument('-s', '--seed', type=int, default=None, help='seed')
     #plot distance vs time
@@ -117,11 +113,11 @@ if __name__ == '__main__':
     gui = args.gui
     verbose = args.verbose
     model = args.model
-    reward_function = args.reward
+    reward_name = args.reward
     seed = args.seed
     save_data = args.save_data
 
     start_time = time.time()
-    agent_control(gui, agent, model, episodes, verbose, reward_function, seed, save_data)
+    agent_control(gui, agent, model, episodes, verbose, reward_name, seed, save_data)
     print("--- %s seconds ---" % (time.time() - start_time))
 

@@ -23,7 +23,7 @@ if __name__ == '__main__':
     # Model pretrained
     parser.add_argument('-m', '--pretrained_model', type=str, default=None, help='model to use')
     # reward function
-    parser.add_argument('-r', '--reward', type=str, default="weighted", help='reward function')
+    parser.add_argument('-r', '--reward', type=str, default="success", help='reward function')
     #save path
     parser.add_argument('-s', '--save_path', type=str, default=None, help='path to save the model')
 
@@ -34,16 +34,13 @@ if __name__ == '__main__':
     agent_name = args.agent
     episodes = args.episodes
     model_path = args.pretrained_model
-    reward_function = args.reward
+    reward_name = args.reward
     save_path = args.save_path
 
     # start training
     start_time = time.time()
     # load the environment
-    if reward_function in utils.implemented_rewards.keys():
-        env = TossingFlexpicker(GUI=False,reward_func=utils.implemented_rewards[reward_function])
-    else:
-        raise utils.UnhandledRewardException("Reward function not implemented")
+    env = TossingFlexpicker(GUI=False,reward_name=reward_name)
 
     # load the agent
     if agent_name in a.implemented_agents:

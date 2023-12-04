@@ -126,28 +126,6 @@ def spawn_cube_on_conveyor(conveyor_pos, seed=None, physicsClient=None):
                                 basePosition=[x, y, z],
                                 useMaximalCoordinates=False)
     return object_id
-
-def success_reward(success, env):
-    if success:
-        return 1
-    else:
-        return 0
-
-def weighted_reward(success, env):
-    alpha = 0.5
-    distance_release = np.round(np.linalg.norm(np.array(env.release_position[:2]) - np.array(env.cube_init_position[:2])), 3)
-    if success:
-        return alpha - (1-alpha) * distance_release/env.distance_cube_bucket
-    else:
-        return - (1-alpha) * distance_release/env.distance_cube_bucket
-
-def lin_reg_reward(success, env):
-    slope = 0.18002413290341168
-    interp = 0.41742689138115985
-    if success:
-        return np.clip(slope * env.distance_release + interp - env.action_time, 0, 100)
-    else:
-        return -env.action_time
     
 class ActionSpaceNormalizer:
     """
@@ -242,22 +220,50 @@ class PickAndPlaceReward(nn.Module):
         print("Mean error: {}".format(np.mean(errors)))
         print("Std error: {}".format(np.std(errors)))
         print("Max error: {}".format(np.max(errors)))
-
-pickAndPlaceReward = PickAndPlaceReward()
-pickAndPlaceReward.load_state_dict(torch.load("models/PaP_reward.pt"))
-def nn_reward(success, env):
-    if success:
-        pred = pickAndPlaceReward(torch.tensor(env.init_obs))
-        reward = pred - env.action_time
-        reward = reward.detach().numpy()[0]
-        return reward
-    else:
-        return -env.action_time
-
-implemented_rewards = {"success": success_reward,
-                       "weighted": weighted_reward,
-                       "lin_reg": lin_reg_reward,
-                       "neural_net": nn_reward}
                        
 class UnhandledRewardException(Exception):
     pass
+
+class Rewardfunction():
+    def __init__(self,reward_name, env) -> None:
+        self.implemented_rewards = {"success": self.success_reward,
+                                    "balanced": self.balanced_reward,
+                       "neural_net": self.nn_reward}
+        self.env = env
+        self.reward_name = reward_name
+
+        if reward_name not in self.implemented_rewards:
+            raise UnhandledRewardException
+        
+        if reward_name == "neural_net" or reward_name == "balanced":
+            self.pickAndPlaceReward = PickAndPlaceReward()
+            self.pickAndPlaceReward.load_state_dict(torch.load("models/PaP_reward.pt"))
+
+    def get_reward(self, success):
+        reward_func = self.implemented_rewards[self.reward_name]
+        return reward_func(success)
+
+    def nn_reward(self, success):
+        if success:
+            pred = self.pickAndPlaceReward(torch.tensor(self.env.init_obs))
+            reward = pred - self.env.action_time
+            reward = reward.detach().numpy()[0]
+            return reward
+        else:
+            return -self.env.action_time
+        
+    def success_reward(self, success):
+        if success:
+            return 1
+        else:
+            return 0
+        
+    def balanced_reward(self, success):
+        if success:
+            pred = self.pickAndPlaceReward(torch.tensor(self.env.init_obs))/(self.env.distance_ratio+1e-8)
+            reward = pred - self.env.action_time
+            reward = reward.detach().numpy()[0]
+            return reward
+        else:
+            return -self.env.action_time
+

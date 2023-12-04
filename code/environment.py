@@ -43,7 +43,7 @@ CONVEYOR_HEIGHT = 0.17 # used to put the conveyor at z=0
 MAX_STEP_SIMULATION = 5/TIME_STEP # 5 seconds max for one throw
 
 class TossingFlexpicker(Env):
-    def __init__(self, GUI=True, domain_randomization=True, reward_func=utils.implemented_rewards["weighted"], seed=None):
+    def __init__(self, GUI=True, domain_randomization=True, reward_name="success", seed=None):
         """
         GUI: True for GUI, False for headless
         user_control: True for user control, False for automatic control
@@ -78,7 +78,7 @@ class TossingFlexpicker(Env):
         self.action_space = Box(low=low_n, high=high_n, shape=(4,), dtype=np.float32)
 
         # Set the reward function
-        self.reward_func = reward_func
+        self.reward_func = utils.Rewardfunction(reward_name, self)
 
         # Set the gravity
         self._p.setAdditionalSearchPath(pybullet_data.getDataPath()) 
@@ -115,6 +115,7 @@ class TossingFlexpicker(Env):
         self.init_obs = self.get_observation()
         self.release_position = self.cube_init_position
         self.distance_cube_bucket = np.round(np.linalg.norm(np.array(self.init_obs[:2]) - np.array(self.bucket_place_position[:2])), 3)
+        self.distance_ratio = 0
         self.action_time = 0
 
     def load_conveyor_and_bucket(self):
@@ -237,7 +238,8 @@ class TossingFlexpicker(Env):
             if self.has_thrown:
                 reward, terminated = self.get_reward_and_is_terminated()
                 if terminated:
-                    return self.get_observation(), reward, terminated, {"is_success": self.success(), "action_time": self.action_time, "distance_ratio": np.clip(self.distance_release/self.distance_cube_bucket, 0, 1)}
+                    self.distance_ratio = np.clip(self.distance_release/self.distance_cube_bucket, 0, 1)
+                    return self.get_observation(), reward, terminated, {"is_success": self.success(), "action_time": self.action_time, "distance_ratio": self.distance_ratio}
 
         if not self.has_thrown:
             self.action_time = self.max_time_step*TIME_STEP
@@ -258,7 +260,8 @@ class TossingFlexpicker(Env):
             for _ in range(10):
                 self.step_simulation()
             reward, terminated = self.get_reward_and_is_terminated()
-        return self.get_observation(), reward, terminated, {"is_success": self.success(), "action_time": np.round(self.action_time, 3), "distance_ratio": np.clip(np.round(self.distance_release/self.distance_cube_bucket,2), 0, 1)}
+        self.distance_ratio = np.clip(self.distance_release/self.distance_cube_bucket, 0, 1)
+        return self.get_observation(), reward, terminated, {"is_success": self.success(), "action_time": np.round(self.action_time, 3), "distance_ratio": self.distance_ratio}
     
 
     def success(self):
@@ -291,13 +294,13 @@ class TossingFlexpicker(Env):
             terminated: bool (True if the episode is terminated)
         """
         if self.success():
-            return self.reward_func(success = True, env=self), True
+            return self.reward_func.get_reward(success=True), True
         
         if self.missed():
-            return self.reward_func(success=False, env=self), True
+            return self.reward_func.get_reward(success=False), True
 
         if self.max_step_simulation <= 0:
-            return self.reward_func(success=False, env=self), True
+            return self.reward_func.get_reward(success=False), True
         
         return 0, False
 
@@ -394,6 +397,7 @@ class TossingFlexpicker(Env):
             self.release_position = self.cube_init_position
             self.distance_cube_bucket = np.round(np.linalg.norm(np.array(self.init_obs[:2]) - np.array(self.bucket_place_position[:2])), 3)
             self.action_time = 0
+            self.distance_ratio = 0
         return self.get_observation()
 
     def close(self):
