@@ -260,7 +260,7 @@ class Rewardfunction():
         
     def balanced_reward(self, success):
         if success:
-            pred = self.pickAndPlaceReward(torch.tensor(self.env.init_obs))/(self.env.distance_ratio+1e-8)
+            pred = self.pickAndPlaceReward(torch.tensor(self.env.init_obs))*(2-self.env.distance_ratio)
             reward = pred - self.env.action_time
             reward = reward.detach().numpy()[0]
             return reward

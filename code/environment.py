@@ -236,9 +236,9 @@ class TossingFlexpicker(Env):
                     self.distance_release = np.round(np.linalg.norm(np.array(self.release_position[:2]) - np.array(self.cube_init_position[:2])), 3)
 
             if self.has_thrown:
+                self.distance_ratio = np.clip(self.distance_release/self.distance_cube_bucket, 0, 1)
                 reward, terminated = self.get_reward_and_is_terminated()
                 if terminated:
-                    self.distance_ratio = np.clip(self.distance_release/self.distance_cube_bucket, 0, 1)
                     return self.get_observation(), reward, terminated, {"is_success": self.success(), "action_time": self.action_time, "distance_ratio": self.distance_ratio}
 
         if not self.has_thrown:
@@ -259,8 +259,9 @@ class TossingFlexpicker(Env):
         while not terminated:
             for _ in range(10):
                 self.step_simulation()
+            self.distance_ratio = np.clip(self.distance_release/self.distance_cube_bucket, 0, 1)
             reward, terminated = self.get_reward_and_is_terminated()
-        self.distance_ratio = np.clip(self.distance_release/self.distance_cube_bucket, 0, 1)
+
         return self.get_observation(), reward, terminated, {"is_success": self.success(), "action_time": np.round(self.action_time, 3), "distance_ratio": self.distance_ratio}
     
 
