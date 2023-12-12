@@ -108,7 +108,7 @@ class TossingFlexpicker(Env):
         self.robot =  Flexpicker(position=self.cube_init_position[:2] +(initial_height_flexpicker,), orientation=p.getQuaternionFromEuler([0,np.pi,cube_orientation[2]-np.pi/2]), GUI=GUI, physicsClient=self._p)
 
         self._p.resetDebugVisualizerCamera(cameraDistance=2.5, cameraYaw=-0, cameraPitch=-35, cameraTargetPosition=[0,0,0])
-        self.robot.grasp(self.object_id, self.bucket_place_position)
+        self.robot.grasp(self.object_id, self.bucket_pos)
 
         # create the variables for the toss and the reward associated urdf
         self.has_thrown = False
@@ -183,8 +183,8 @@ class TossingFlexpicker(Env):
         init_pos, init_orn = self._p.getLinkState(self.robot.id, self.robot.end_effector_id)[0:2]
         y_release = action[0]
         z_release = action[1]
-        m_x = (self.bucket_place_position[0] - init_pos[0]) / (self.bucket_place_position[1] - init_pos[1])
-        offset_x = self.bucket_place_position[0] - m_x * self.bucket_place_position[1]
+        m_x = (self.bucket_pos[0] - init_pos[0]) / (self.bucket_pos[1] - init_pos[1])
+        offset_x = self.bucket_pos[0] - m_x * self.bucket_pos[1]
         x_release = m_x * y_release + offset_x
         release_pos = (x_release, y_release, z_release)
         #print("desired action after first calculation", release_pos + (action[2],))
@@ -199,9 +199,11 @@ class TossingFlexpicker(Env):
         #print("desired action after second calculation", target_pos + (action[2],))
 
         # compute yaw
-        yaw = np.arcsin(np.dot(np.array(self.bucket_place_position[:2]) - np.array(init_pos[:2]), np.array([0, 1])) / np.linalg.norm(np.array(self.bucket_place_position[:2]) - np.array(init_pos[:2])))
-        if self.bucket_place_position[0] < init_pos[0]:
+        yaw = np.arcsin(np.dot(np.array(self.bucket_pos[:2]) - np.array(init_pos[:2]), np.array([0, 1])) / np.linalg.norm(np.array(self.bucket_pos[:2]) - np.array(init_pos[:2])))
+        if self.bucket_pos[0] < init_pos[0]:
             yaw = -yaw
+        else:
+            yaw += np.pi
 
         # compute linear trajectory
         target_orn = self._p.getQuaternionFromEuler([0,0,yaw])
@@ -212,7 +214,7 @@ class TossingFlexpicker(Env):
         # #plot a an horizontal line at the desired action speed of the robot
         # plt.plot(np.ones(velocities.shape[0])*action[2])
         # plt.show()
-        #plot in 3D the trajectory
+        # #plot in 3D the trajectory
         # fig = plt.figure()
         # ax = fig.add_subplot(111, projection='3d')
         # ax.plot(lin_pos[:, 0], lin_pos[:, 1], lin_pos[:, 2])
@@ -420,13 +422,13 @@ class TossingFlexpicker(Env):
             # Load the robot
             initial_height_flexpicker = 0.6
             self.robot =  Flexpicker(position=self.cube_init_position[:2] +(initial_height_flexpicker,), orientation=p.getQuaternionFromEuler([0,np.pi,cube_orientation[2]-np.pi/2]), GUI=self.GUI, physicsClient=self._p)
-            self.robot.grasp(self.object_id, self.bucket_place_position)
+            self.robot.grasp(self.object_id, self.bucket_pos)
 
             # reset the variables for the toss and the reward associated
             self.has_thrown = False
             self.init_obs = self.get_observation()
             self.release_position = self.cube_init_position
-            self.distance_cube_bucket = np.round(np.linalg.norm(np.array(self.init_obs[:2]) - np.array(self.bucket_place_position[:2])), 3)
+            self.distance_cube_bucket = np.round(np.linalg.norm(np.array(self.init_obs[:2]) - np.array(self.bucket_pos[:2])), 3)
             self.action_time = 0
             self.distance_ratio = 0
         return self.get_observation()

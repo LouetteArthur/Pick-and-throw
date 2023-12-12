@@ -66,6 +66,8 @@ class Flexpicker:
         yaw = np.arcsin(np.dot(np.array(bucket_place_position[:2]) - np.array(init_pos[:2]), np.array([0, 1])) / np.linalg.norm(np.array(bucket_place_position[:2]) - np.array(init_pos[:2])))
         if bucket_place_position[0] < init_pos[0]:
             yaw = -yaw
+        else:
+            yaw += np.pi
         # raise the object
         object_approach_position = 0.08
         self.move(position_to_grasp[:2] +(object_approach_position,) + (yaw,), "position")
