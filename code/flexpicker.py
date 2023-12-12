@@ -11,7 +11,7 @@ class Flexpicker:
         self.pos = position
         self.ori = orientation
         self.__parse_joint_info__()
-        self.gripper_range = [-0.04, 0.04]
+        self.gripper_range = [0, 0.04]
         self.end_effector_id = 6
         self.GUI = GUI
 
