@@ -102,8 +102,8 @@ def spawn_cube_on_conveyor(conveyor_pos, seed=None, physicsClient=None):
 
     # spawn the cube at a random location in the workspace of the robot (radius = 0.8m) 
     # and on the conveyor (width = 1.4m and length = 2m) but not too close to the edge (5cm from the edge max) 
-    x = np.random.uniform(0.75, 0.75)
-    y = np.random.uniform(-0.65, conveyor_pos + 0.65)
+    x = np.random.uniform(np.sqrt(2)*0.75/2, np.sqrt(2)*0.75/2)
+    y = np.random.uniform(np.sqrt(2)*-0.65/2, np.sqrt(2)*(conveyor_pos + 0.65)/2)
     z = cube_size/2
     
     mass = np.random.uniform(0.1, 2)

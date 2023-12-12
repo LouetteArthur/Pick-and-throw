@@ -9,7 +9,7 @@ bucket_LENGTH = 0.72
 class UnhandledAgentException(Exception):
     pass
 
-implemented_agents = {"goToBucket", "sac", "ddpg", "td3", "ppo"}
+implemented_agents = {"goToBucket", "optim", "sac", "ddpg", "td3", "ppo"}
 
 # Define the default agent class
 class Agent(object):
@@ -41,16 +41,19 @@ class goToBucketAgent(Agent):
         action = env.action_normalizer.normalize(action)
         return action
     
-# class optimAgent(Agent):
-#     def __init__(self, trainable=False):
-#         super().__init__(trainable)
+class optimAgent(Agent):
+    def __init__(self, trainable=False):
+        super().__init__(trainable)
 
-#     def act(self, env):
-#         error = 0.01
-#         pos_obj = env._p.getBasePositionAndOrientation(env.object_id)[0]
-#         pr_and_v = main(pos_obj, env.bucket_pos[:2] + (0, ), error)
-#         action = np.append(pr_and_v[1:], pr_and_v[1] + abs(pr_and_v[1] - pos_obj[1]))
-#         return np.float32(action)
+    def act(self, env):
+        error = 0.001
+        pos_obj = env._p.getBasePositionAndOrientation(env.object_id)[0]
+        #print("pos_obj", pos_obj)
+        pr_and_v = main(pos_obj, env.bucket_pos[:2] + (0, ), error)
+        #print("desired action", pr_and_v)
+        action = np.append(pr_and_v[1:], pr_and_v[1] + abs(pr_and_v[1] - pos_obj[1]))
+        action = env.action_normalizer.normalize(action)
+        return np.float32(action)
 
 ## RL agents ##
 class ddpgAgent(Agent):

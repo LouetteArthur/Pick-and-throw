@@ -45,24 +45,30 @@ class Flexpicker:
         self.joint_ranges = [info.upperLimit - info.lowerLimit for info in self.joints if info.controllable]
 
 
-    def grasp(self, object_id):
+    def grasp(self, object_id, bucket_place_position):
         # grasp an object
         self.open_gripper()
         while not self.is_gripper_open():
             self._p.stepSimulation()
             if self.GUI:
                 time.sleep(1./240.)
-        position_to_grasp = tuple(list(self._p.getBasePositionAndOrientation(object_id)[0]) + np.array([0, 0, 0.1]))
-        self.move(position_to_grasp + (self._p.getBasePositionAndOrientation(object_id)[0][2],), "position")
+        init_pos, _ = self._p.getBasePositionAndOrientation(object_id)
+        position_to_grasp = tuple(list(init_pos) + np.array([0, 0, 0.1]))
+        self.move(position_to_grasp + (self._p.getBasePositionAndOrientation(object_id)[0][2]-np.pi/2,), "position")
         self.grasp_cons_id = self._p.createConstraint(self.id, self.end_effector_id, object_id, -1, self._p.JOINT_FIXED, [0,0,0], [0,0,0], [0,0,0])
         self.close_gripper(object_id)
         while not self.is_gripper_closed(object_id):
             self._p.stepSimulation()
             if self.GUI:
                 time.sleep(1./240.)
+
+        # compute yaw
+        yaw = np.arcsin(np.dot(np.array(bucket_place_position[:2]) - np.array(init_pos[:2]), np.array([0, 1])) / np.linalg.norm(np.array(bucket_place_position[:2]) - np.array(init_pos[:2])))
+        if bucket_place_position[0] < init_pos[0]:
+            yaw = -yaw
         # raise the object
         object_approach_position = 0.08
-        self.move(position_to_grasp[:2] +(object_approach_position,) + (self._p.getBasePositionAndOrientation(object_id)[1][2],), "position")
+        self.move(position_to_grasp[:2] +(object_approach_position,) + (yaw,), "position")
         while abs(self._p.getBasePositionAndOrientation(object_id)[0][2] - object_approach_position) > 0.005: 
             self._p.stepSimulation()
             if self.GUI:
