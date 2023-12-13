@@ -49,7 +49,7 @@ class optimAgent(Agent):
         error = 0.001
         pos_obj = env._p.getBasePositionAndOrientation(env.object_id)[0]
         #print("pos_obj", pos_obj)
-        pr_and_v = main(pos_obj, env.bucket_pos[:2] + (0, ), error)
+        pr_and_v = main(pos_obj, env.bucket_place_position[:2] + (0.07, ), error)
         #print("desired action", pr_and_v)
         action = np.append(pr_and_v[1:], pr_and_v[1] + abs(pr_and_v[1] - pos_obj[1]))
         action = env.action_normalizer.normalize(action)
