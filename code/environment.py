@@ -117,6 +117,7 @@ class TossingFlexpicker(Env):
         self.distance_cube_bucket = np.round(np.linalg.norm(np.array(self.init_obs[:2]) - np.array(self.bucket_place_position[:2])), 3)
         self.distance_ratio = 0
         self.action_time = 0
+        self.distance_impact_to_bucket = 0
 
     def load_conveyor_and_bucket(self):
         if self.domain_randomization:
@@ -244,7 +245,6 @@ class TossingFlexpicker(Env):
         delay = round(0.171/TIME_STEP)
         if self.domain_randomization:
             delay = round(np.random.uniform(0.150/TIME_STEP, 0.190/TIME_STEP))
-        delay = 0
         
         self.max_time_step = len(lin_pos)
         for i in range(self.max_time_step):
@@ -307,6 +307,7 @@ class TossingFlexpicker(Env):
         if object_aabb[0][0] > bucket_aabb[0][0] and object_aabb[1][0] < bucket_aabb[1][0]:
             if object_aabb[0][1] > bucket_aabb[0][1] and object_aabb[1][1] < bucket_aabb[1][1]:
                 in_bucket = True
+                self.distance_impact_to_bucket = 0
         return True if self._p.getContactPoints(self.object_id, self.bucket_id, linkIndexB=-1) and in_bucket else False
 
     def missed(self):
@@ -316,8 +317,11 @@ class TossingFlexpicker(Env):
         lin_velocity, _ = self._p.getBaseVelocity(self.object_id)
         stuck_on_target_bucket = self._p.getContactPoints(self.object_id, self.bucket_id) and np.linalg.norm(lin_velocity) < 0.01
         if self._p.getContactPoints(self.object_id) and not self._p.getContactPoints(self.object_id, self.bucket_id) and not self._p.getContactPoints(self.object_id, self.robot.id):
+            #extract the distance between the object and the bucket
+            self.distance_impact_to_bucket = np.round(np.linalg.norm(np.array(self._p.getContactPoints(self.object_id)[0][5][:2]) - np.array(self.bucket_place_position[:2])), 3)
             return True
         elif stuck_on_target_bucket:
+            self.distance_impact_to_bucket = np.round(np.linalg.norm(np.array(self._p.getContactPoints(self.object_id)[0][5][:2]) - np.array(self.bucket_place_position[:2])), 3)
             return True
 
     def get_reward_and_is_terminated(self):
@@ -392,6 +396,7 @@ class TossingFlexpicker(Env):
             self.release_position = self.cube_init_position
             self.distance_cube_bucket = np.round(np.linalg.norm(np.array(self.init_obs[:2]) - np.array(self.bucket_place_position[:2])), 3)
             self.action_time = 0
+            self.distance_impact_to_bucket = 0
         else:
             # reset the max time step
             self.max_step_simulation = MAX_STEP_SIMULATION
@@ -431,6 +436,7 @@ class TossingFlexpicker(Env):
             self.distance_cube_bucket = np.round(np.linalg.norm(np.array(self.init_obs[:2]) - np.array(self.bucket_pos[:2])), 3)
             self.action_time = 0
             self.distance_ratio = 0
+            self.distance_impact_to_bucket = 0
         return self.get_observation()
 
     def close(self):

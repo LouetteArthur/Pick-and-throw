@@ -260,10 +260,21 @@ class Rewardfunction():
         
     def balanced_reward(self, success):
         if success:
-            pred = self.pickAndPlaceReward(torch.tensor(self.env.init_obs))*(2-self.env.distance_ratio)
+            pred = self.pickAndPlaceReward(torch.tensor(self.env.init_obs))
             reward = pred - self.env.action_time
             reward = reward.detach().numpy()[0]
+            #print the components of the reward
+            print("action time: ", self.env.action_time)
+            print("distance impact to bucket: ", self.env.distance_impact_to_bucket)
+            print("PaP time predicted: ", pred)
             return reward
         else:
-            return -self.env.action_time
+            pred = self.pickAndPlaceReward(torch.tensor(self.env.init_obs))
+            reward = pred - self.env.action_time -  self.env.distance_impact_to_bucket
+            reward = reward.detach().numpy()[0]
+            #print the components of the reward
+            print("action time: ", self.env.action_time)
+            print("distance impact to bucket: ", self.env.distance_impact_to_bucket)
+            print("PaP time predicted: ", pred)
+            return reward
 
