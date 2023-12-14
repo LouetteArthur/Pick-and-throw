@@ -71,7 +71,8 @@ class Flexpicker:
         # raise the object
         object_approach_position = 0.08
         self.move(position_to_grasp[:2] +(object_approach_position,) + (yaw,), "position")
-        while abs(self._p.getBasePositionAndOrientation(object_id)[0][2] - object_approach_position) > 0.005: 
+        # check if the object is raised and well oriented
+        while abs(self._p.getBasePositionAndOrientation(object_id)[0][2] - object_approach_position) > 0.005 and abs(self._p.getBasePositionAndOrientation(object_id)[1][2] - yaw) > 0.005:
             self._p.stepSimulation()
             if self.GUI:
                 time.sleep(1./240.)

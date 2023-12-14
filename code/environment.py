@@ -211,7 +211,7 @@ class TossingFlexpicker(Env):
         self.speed = action[2]
         scaling_factor = action[2]/MAX_SPEED_FLEXPICKER
         lin_pos, orn, velocities = utils.ctraj_pilz_KDL(init_pos, init_orn, target_pos, target_orn, MAX_SPEED_FLEXPICKER, MAX_ACCELERATION_FLEXPICKER, scaling_factor, 1, MAX_ROT_SPEED, TIME_STEP)
-        plt.plot(np.sqrt(velocities[:, 0]**2+velocities[:, 1]**2+velocities[:, 2]**2))
+        #plt.plot(np.sqrt(velocities[:, 0]**2+velocities[:, 1]**2+velocities[:, 2]**2))
         # #plot a an horizontal line at the desired action speed of the robot
         # plt.plot(np.ones(velocities.shape[0])*action[2])
         # plt.show()
@@ -236,10 +236,6 @@ class TossingFlexpicker(Env):
         # ax.set_box_aspect([1,1,1])
         # plt.show()
         #print("desired action after orocos calculation", lin_pos[-1] + (np.linalg.norm(velocities[-1][:3]),))
-        #compute yaw trajectory
-        _, orn_yaw, yaw_velocities = utils.ctraj_pilz_KDL(init_pos, init_orn, release_pos, target_orn, MAX_SPEED_FLEXPICKER, MAX_ACCELERATION_FLEXPICKER, scaling_factor, 1, MAX_ROT_SPEED, TIME_STEP)
-        orn_yaw = np.concatenate((orn_yaw[:,2], np.ones(orn.shape[0]- orn_yaw.shape[0])*orn_yaw[-1,2]))
-        yaw_velocities = np.concatenate((yaw_velocities[:, 5], np.zeros((velocities.shape[0]- yaw_velocities.shape[0]))))
 
         # the gripper opening delay is supposed to be 171ms according to the datasheet 
         delay = round(0.171/TIME_STEP)
@@ -248,10 +244,9 @@ class TossingFlexpicker(Env):
         
         self.max_time_step = len(lin_pos)
         for i in range(self.max_time_step):
-            speed = np.concatenate((velocities[i][:3], [yaw_velocities[i]]))
-            action = tuple(np.concatenate((lin_pos[i], [orn_yaw[i]]))) + (speed,)
+            speed = np.concatenate((velocities[i][:3], [velocities[i][5]]))
+            action = tuple(np.concatenate((lin_pos[i], [orn[i][2]]))) + (speed,)
             self.robot.move(action, control_method='position')
-            orna = self._p.getEulerFromQuaternion(self._p.getLinkState(self.robot.id, 6)[1])[2]
             self.step_simulation()
             # throw the object when the position is reached + The gripper openning delay
             pos = lin_pos[i]
@@ -274,7 +269,7 @@ class TossingFlexpicker(Env):
 
         if not self.has_thrown:
             self.action_time = self.max_time_step*TIME_STEP
-            action = tuple(np.concatenate((lin_pos[-1], [orn_yaw[-1]])))+ (speed,)
+            action = tuple(np.concatenate((lin_pos[-1], [orn[-1][2]])))+ (speed,)
             self.robot.move(action, control_method='position')
             while delay>0:
                 delay -= 1

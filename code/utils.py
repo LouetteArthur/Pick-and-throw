@@ -263,18 +263,10 @@ class Rewardfunction():
             pred = self.pickAndPlaceReward(torch.tensor(self.env.init_obs))
             reward = pred - self.env.action_time
             reward = reward.detach().numpy()[0]
-            #print the components of the reward
-            print("action time: ", self.env.action_time)
-            print("distance impact to bucket: ", self.env.distance_impact_to_bucket)
-            print("PaP time predicted: ", pred)
             return reward
         else:
             pred = self.pickAndPlaceReward(torch.tensor(self.env.init_obs))
             reward = pred - self.env.action_time -  self.env.distance_impact_to_bucket
             reward = reward.detach().numpy()[0]
-            #print the components of the reward
-            print("action time: ", self.env.action_time)
-            print("distance impact to bucket: ", self.env.distance_impact_to_bucket)
-            print("PaP time predicted: ", pred)
             return reward
 
