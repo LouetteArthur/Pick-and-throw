@@ -237,7 +237,7 @@ class Rewardfunction():
         
         if reward_name == "success_and_time" or reward_name == "success_time_and_distance":
             self.pickAndPlaceReward = PickAndPlaceReward()
-            self.pickAndPlaceReward.load_state_dict(torch.load("models/PaP_reward2.pt"))
+            self.pickAndPlaceReward.load_state_dict(torch.load("models/PaP_reward.pt"))
 
     def get_reward(self, success):
         reward_func = self.implemented_rewards[self.reward_name]
