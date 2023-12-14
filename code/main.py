@@ -63,14 +63,9 @@ def agent_control(GUI=False, agent_name='goToBucket', model=None, episodes=10, v
         if GUI:
             time.sleep(1)
 
-    nb_success = np.sum(success)
-    if nb_success:
-        print(f"Success reward: {np.mean(success_reward)/nb_success}")
-    else:
-        print(f"Success reward: {success_reward}")
-    
     print(f"Success rate: {np.mean(success)} ({np.std(success)})")
     print(f"Mean reward: {np.round(np.mean(rewards),3)} ({np.round(np.std(rewards),3)})")
+    print(f"Success reward: {np.mean(success_reward)}")
     print(f"Action time: {np.round(np.mean(action_time),3)} ({np.round(np.std(action_time), 3)})")
     print(f"Distance ratio: {np.round(np.mean(distance_ratio),3)} ({np.round(np.std(distance_ratio),3)})")
     if save_data:
