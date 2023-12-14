@@ -227,23 +227,23 @@ class UnhandledRewardException(Exception):
 class Rewardfunction():
     def __init__(self,reward_name, env) -> None:
         self.implemented_rewards = {"success": self.success_reward,
-                                    "balanced": self.balanced_reward,
-                       "neural_net": self.nn_reward}
+                                    "success_time_and_distance": self.success_time_and_distance_reward,
+                       "success_and_time": self.success_and_time_reward}
         self.env = env
         self.reward_name = reward_name
 
         if reward_name not in self.implemented_rewards:
             raise UnhandledRewardException
         
-        if reward_name == "neural_net" or reward_name == "balanced":
+        if reward_name == "success_and_time" or reward_name == "success_time_and_distance":
             self.pickAndPlaceReward = PickAndPlaceReward()
-            self.pickAndPlaceReward.load_state_dict(torch.load("models/PaP_reward.pt"))
+            self.pickAndPlaceReward.load_state_dict(torch.load("models/PaP_reward2.pt"))
 
     def get_reward(self, success):
         reward_func = self.implemented_rewards[self.reward_name]
         return reward_func(success)
 
-    def nn_reward(self, success):
+    def success_and_time_reward(self, success):
         if success:
             pred = self.pickAndPlaceReward(torch.tensor(self.env.init_obs))
             reward = pred - self.env.action_time
@@ -258,7 +258,7 @@ class Rewardfunction():
         else:
             return 0
         
-    def balanced_reward(self, success):
+    def success_time_and_distance_reward(self, success):
         if success:
             pred = self.pickAndPlaceReward(torch.tensor(self.env.init_obs))
             reward = pred - self.env.action_time
