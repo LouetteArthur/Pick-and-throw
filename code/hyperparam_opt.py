@@ -315,7 +315,7 @@ def objective(trial: optuna.Trial) -> float:
     kwargs = DEFAULT_HYPERPARAMS.copy()
 
     # Create the RL model
-    env = TossingFlexpicker(GUI=False,reward_func="success_time_and_distance")
+    env = TossingFlexpicker(GUI=False,reward_name="success_time_and_distance")
     if algo == "SAC":
         model = SAC(env=env, **kwargs)
         kwargs.update(sample_sac_params(trial))
@@ -332,7 +332,7 @@ def objective(trial: optuna.Trial) -> float:
         raise NotImplementedError("Only SAC, PPO, DDPG and TD3 are implemented so far")
 
     # 2. Create envs used for evaluation using `make_vec_env`, `ENV_ID` and `N_EVAL_ENVS`
-    eval_envs = make_vec_env(lambda: TossingFlexpicker(GUI=False,reward_func="success_time_and_distance"), n_envs=N_EVAL_ENVS)
+    eval_envs = make_vec_env(lambda: TossingFlexpicker(GUI=False,reward_name="success_time_and_distance"), n_envs=N_EVAL_ENVS)
 
     # 3. Create the `TrialEvalCallback` callback defined above that will periodically evaluate
     eval_callback = TrialEvalCallback(eval_envs, trial, N_EVAL_EPISODES, EVAL_FREQ, deterministic=True)
