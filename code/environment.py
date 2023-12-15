@@ -34,7 +34,7 @@ BUCKET_WIDTH_MAX = 0.21
 BUCKET_LENGTH_MIN = 0.72
 BUCKET_LENGTH_MAX = 0.72
 
-MAX_SEED = 100000000
+MAX_int_seed = 100000000
 BUCKET_WIDTH = 0.21
 CONVEYOR_WIDTH = 1.4
 BUCKET_LENGTH = 0.72
@@ -43,7 +43,7 @@ CONVEYOR_HEIGHT = 0.17 # used to put the conveyor at z=0
 MAX_STEP_SIMULATION = 5/TIME_STEP # 5 seconds max for one throw
 
 class TossingFlexpicker(Env):
-    def __init__(self, GUI=True, domain_randomization=True, reward_name="success", seed=None):
+    def __init__(self, GUI=True, domain_randomization=True, reward_name="success", int_seed=None):
         """
         GUI: True for GUI, False for headless
         user_control: True for user control, False for automatic control
@@ -52,12 +52,12 @@ class TossingFlexpicker(Env):
         # max 5 seconds
         self.max_step_simulation = MAX_STEP_SIMULATION
         
-        # set random seed if provided
-        if seed is not None: 
-            self.seed = seed
+        # set random int_seed if provided
+        if int_seed is not None: 
+            self.int_seed = int_seed
         else:
-            self.seed = np.random.randint(0, MAX_SEED)
-        random.seed(self.seed)
+            self.int_seed = np.random.randint(0, MAX_int_seed)
+        random.int_seed(self.int_seed)
 
         # Connect to the physics server
         self.GUI = GUI
@@ -97,9 +97,9 @@ class TossingFlexpicker(Env):
 
         # Load the object
         if self.domain_randomization:
-            self.object_id = utils.spawn_cube_on_conveyor(conveyor_pos=self.random_y_conveyor, seed=self.seed, physicsClient=self._p)
+            self.object_id = utils.spawn_cube_on_conveyor(conveyor_pos=self.random_y_conveyor, int_seed=self.int_seed, physicsClient=self._p)
         else:
-            self.object_id = utils.spawn_cube_on_conveyor(conveyor_pos=0, seed=self.seed, physicsClient=self._p)
+            self.object_id = utils.spawn_cube_on_conveyor(conveyor_pos=0, int_seed=self.int_seed, physicsClient=self._p)
         self.bucket_pos, _ = self._p.getBasePositionAndOrientation(self.bucket_id)
         self.cube_init_position, cube_orientation = self._p.getBasePositionAndOrientation(self.object_id)
 
@@ -360,9 +360,9 @@ class TossingFlexpicker(Env):
             # reset the max time step
             self.max_step_simulation = MAX_STEP_SIMULATION
 
-            # select a random seed
-            self.seed = np.random.randint(0, MAX_SEED)
-            random.seed(self.seed)
+            # select a random int_seed
+            self.int_seed = np.random.randint(0, MAX_int_seed)
+            random.int_seed(self.int_seed)
 
             # Configure debug visualizer flags to remove grid
             self._p.configureDebugVisualizer(self._p.COV_ENABLE_GUI, 0)
@@ -374,9 +374,9 @@ class TossingFlexpicker(Env):
 
             # Load the object
             if self.domain_randomization:
-                self.object_id = utils.spawn_cube_on_conveyor(conveyor_pos=self.random_y_conveyor, seed=self.seed, physicsClient=self._p)
+                self.object_id = utils.spawn_cube_on_conveyor(conveyor_pos=self.random_y_conveyor, int_seed=self.int_seed, physicsClient=self._p)
             else:
-                self.object_id = utils.spawn_cube_on_conveyor(conveyor_pos=0, seed=self.seed, physicsClient=self._p)
+                self.object_id = utils.spawn_cube_on_conveyor(conveyor_pos=0, int_seed=self.int_seed, physicsClient=self._p)
             self.bucket_pos, _ = self._p.getBasePositionAndOrientation(self.bucket_id)
             self.cube_init_position, cube_orientation = self._p.getBasePositionAndOrientation(self.object_id)
 
@@ -396,9 +396,9 @@ class TossingFlexpicker(Env):
             # reset the max time step
             self.max_step_simulation = MAX_STEP_SIMULATION
 
-            # select a random seed
-            self.seed = np.random.randint(0, MAX_SEED)
-            random.seed(self.seed)
+            # select a random int_seed
+            self.int_seed = np.random.randint(0, MAX_int_seed)
+            random.int_seed(self.int_seed)
 
             # remove the object and the buckets
             self._p.removeBody(self.object_id)
@@ -413,9 +413,9 @@ class TossingFlexpicker(Env):
 
             # Load the object
             if self.domain_randomization:
-                self.object_id = utils.spawn_cube_on_conveyor(conveyor_pos=self.random_y_conveyor, seed=self.seed, physicsClient=self._p)
+                self.object_id = utils.spawn_cube_on_conveyor(conveyor_pos=self.random_y_conveyor, int_seed=self.int_seed, physicsClient=self._p)
             else:
-                self.object_id = utils.spawn_cube_on_conveyor(conveyor_pos=0, seed=self.seed, physicsClient=self._p)
+                self.object_id = utils.spawn_cube_on_conveyor(conveyor_pos=0, int_seed=self.int_seed, physicsClient=self._p)
             self.bucket_pos, _ = self._p.getBasePositionAndOrientation(self.bucket_id)
             self.cube_init_position, cube_orientation = self._p.getBasePositionAndOrientation(self.object_id)
             
