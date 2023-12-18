@@ -5,8 +5,8 @@ import pybullet_data
 import numpy as np
 from flexpicker import Flexpicker
 import random
-from gym import Env
-from gym.spaces import Discrete, Box, Dict
+from gymnasium import Env
+from gymnasium.spaces import Discrete, Box, Dict
 from pybullet_utils import bullet_client as bc
 import matplotlib.pyplot as plt
 
@@ -265,7 +265,7 @@ class TossingFlexpicker(Env):
                 self.distance_ratio = np.clip(self.distance_release/self.distance_cube_bucket, 0, 1)
                 reward, terminated = self.get_reward_and_is_terminated()
                 if terminated:
-                    return self.get_observation(), reward, terminated, {"is_success": self.success(), "action_time": self.action_time, "distance_ratio": self.distance_ratio}
+                    return self.get_observation(), reward, terminated, False, {"is_success": self.success(), "action_time": self.action_time, "distance_ratio": self.distance_ratio}
 
         if not self.has_thrown:
             self.action_time = self.max_time_step*TIME_STEP
@@ -289,7 +289,7 @@ class TossingFlexpicker(Env):
             self.distance_ratio = np.clip(self.distance_release/self.distance_cube_bucket, 0, 1)
             reward, terminated = self.get_reward_and_is_terminated()
 
-        return self.get_observation(), reward, terminated, {"is_success": self.success(), "action_time": np.round(self.action_time, 3), "distance_ratio": self.distance_ratio}
+        return self.get_observation(), reward, terminated, False, {"is_success": self.success(), "action_time": np.round(self.action_time, 3), "distance_ratio": self.distance_ratio}
     
 
     def success(self):
@@ -343,7 +343,7 @@ class TossingFlexpicker(Env):
         position, _ = self._p.getBasePositionAndOrientation(self.object_id)
         return np.float32(np.array((position[:2] + (self.bucket_pos[0],) + (self.bucket_pos[1],))))
 
-    def reset(self, seed=None):
+    def reset(self, seed=None, options=None):
         if (self.physicsClientId < 0):
             self.ownsPhysicsClient = True
 
@@ -438,7 +438,7 @@ class TossingFlexpicker(Env):
             self.action_time = 0
             self.distance_ratio = 0
             self.distance_impact_to_bucket = 0
-        return self.get_observation()
+        return self.get_observation(), {}
 
     def close(self):
         if (self.ownsPhysicsClient):

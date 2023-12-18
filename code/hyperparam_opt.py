@@ -2,7 +2,7 @@ import optuna
 import torch
 import utils
 import argparse
-import gym
+import gymnasium as gym
 import joblib
 import numpy as np
 import torch.nn as nn

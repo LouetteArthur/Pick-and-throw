@@ -47,7 +47,7 @@ def agent_control(GUI=False, agent_name='goToBucket', model=None, episodes=10, v
                 action, _ = agent.act(env)
             else:
                 action = agent.act(env)
-            observation, reward, terminated, info = env.step(action)
+            observation, reward, terminated, truncated, info = env.step(action)
             success.append(int(info['is_success']))
             rewards.append(reward)
             action_time.append(info['action_time'])
