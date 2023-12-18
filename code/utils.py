@@ -206,7 +206,7 @@ class PickAndPlaceReward(nn.Module):
             env.reset()
             done = False
             while not done:
-                observation = np.array(env.get_observation())
+                observation = np.array(env.init_obs)
                 observation = torch.tensor(np.array(observation), dtype=torch.float32).to(device)
                 action = agent.act(env)
                 _, _, done, info = env.step(action)
