@@ -31,7 +31,7 @@ python3 train_agent.py {experiment_args}
 DEFAULT_SLURM_ARGS = {
     'nb_cpu': 4,
     'mem_per_cpu': 32,
-    'nb_gpu': 1,
+    'nb_gpu': 0,
     'max_time': '7-00:00:00',
     'partition': 'all',
     'conda_env': 'base',
