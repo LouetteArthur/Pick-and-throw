@@ -72,19 +72,20 @@ class ddpgAgent(Agent):
         return action
 
     def train(self, env, episodes, callback=None, save_path="models/ddpg", **kwargs):
-        # Handle action noise
-        action_noise_type = kwargs.pop("action_noise")
-        action_noise_std = kwargs.pop("action_noise_std")
-        if action_noise_type == "NormalActionNoise":
-            action_noise = NormalActionNoise(mean=0, sigma=action_noise_std * env.action_space.shape[0])
-        elif action_noise_type == "OrnsteinUhlenbeckActionNoise":
-            action_noise = OrnsteinUhlenbeckActionNoise(mean=0, sigma=action_noise_std * env.action_space.shape[0])
-        else:
-            action_noise = None
-        kwargs["action_noise"] = action_noise
+        action_noise_type = kwargs.get("action_noise", None)
+        action_noise_std = kwargs.get("action_noise_std", None)
+        if action_noise_type and action_noise_std:
+            if action_noise_type == "NormalActionNoise":
+                action_noise = NormalActionNoise(mean=0, sigma=action_noise_std * env.action_space.shape[0])
+            elif action_noise_type == "OrnsteinUhlenbeckActionNoise":
+                action_noise = OrnsteinUhlenbeckActionNoise(mean=0, sigma=action_noise_std * env.action_space.shape[0])
+            else:
+                action_noise = None
+            kwargs["action_noise"] = action_noise
 
-        policy_kwargs = kwargs.pop("policy_kwargs")
-        kwargs["policy_kwargs"] = policy_kwargs
+        policy_kwargs = kwargs.get("policy_kwargs", None)
+        if policy_kwargs is not None:
+            kwargs["policy_kwargs"] = policy_kwargs
 
         self.model = DDPG('MlpPolicy', env, tensorboard_log="logs/DDPG", **kwargs)
         self.model.learn(total_timesteps=episodes, callback=callback)
@@ -107,8 +108,9 @@ class sacAgent(Agent):
         return action
 
     def train(self, env, episodes, callback=None, save_path="models/sac_flexpicker", **kwargs):
-        policy_kwargs = kwargs.pop("policy_kwargs")
-        kwargs["policy_kwargs"] = policy_kwargs
+        policy_kwargs = kwargs.get("policy_kwargs", None)
+        if policy_kwargs is not None:
+            kwargs["policy_kwargs"] = policy_kwargs 
         self.model = SAC('MlpPolicy', env, verbose=0, **kwargs)
         self.model.learn(total_timesteps=episodes, callback=callback)
         self.model.save(save_path)
@@ -129,19 +131,20 @@ class td3Agent(Agent):
         return action
 
     def train(self, env, episodes, callback=None, save_path="models/td3_flexpicker", **kwargs):
-        # Handle action noise
-        action_noise_type = kwargs.pop("action_noise")
-        action_noise_std = kwargs.pop("action_noise_std")
-        if action_noise_type == "NormalActionNoise":
-            action_noise = NormalActionNoise(mean=0, sigma=action_noise_std * env.action_space.shape[0])
-        elif action_noise_type == "OrnsteinUhlenbeckActionNoise":
-            action_noise = OrnsteinUhlenbeckActionNoise(mean=0, sigma=action_noise_std * env.action_space.shape[0])
-        else:
-            action_noise = None
-        kwargs["action_noise"] = action_noise
+        action_noise_type = kwargs.get("action_noise", None)
+        action_noise_std = kwargs.get("action_noise_std", None)
+        if action_noise_type and action_noise_std:
+            if action_noise_type == "NormalActionNoise":
+                action_noise = NormalActionNoise(mean=0, sigma=action_noise_std * env.action_space.shape[0])
+            elif action_noise_type == "OrnsteinUhlenbeckActionNoise":
+                action_noise = OrnsteinUhlenbeckActionNoise(mean=0, sigma=action_noise_std * env.action_space.shape[0])
+            else:
+                action_noise = None
+            kwargs["action_noise"] = action_noise
 
-        policy_kwargs = kwargs.pop("policy_kwargs")
-        kwargs["policy_kwargs"] = policy_kwargs
+        policy_kwargs = kwargs.get("policy_kwargs", None)
+        if policy_kwargs is not None:
+            kwargs["policy_kwargs"] = policy_kwargs 
         self.model = TD3('MlpPolicy', env, tensorboard_log="logs/TD3" , **kwargs)
         self.model.learn(total_timesteps=episodes, callback=callback)
         self.model.save(save_path)
@@ -162,11 +165,14 @@ class ppoAgent(Agent):
         return action
 
     def train(self, env, episodes, callback=None, save_path="models/ppo_flexpicker", **kwargs):
-        policy_kwargs = kwargs.pop("policy_kwargs")
-        activation_fn = policy_kwargs.pop("activation_fn")
-        activation_fn = {"tanh": nn.Tanh, "relu": nn.ReLU, "elu": nn.ELU, "leaky_relu": nn.LeakyReLU}[activation_fn]
-        policy_kwargs["activation_fn"] = activation_fn
-        kwargs["policy_kwargs"] = policy_kwargs
+        policy_kwargs = kwargs.get("policy_kwargs", None)
+        if policy_kwargs is not None:
+            activation_fn = policy_kwargs.pop("activation_fn", None)
+            if activation_fn:
+                activation_fn = {"tanh": nn.Tanh, "relu": nn.ReLU, "elu": nn.ELU, "leaky_relu": nn.LeakyReLU}.get(activation_fn, None)
+                if activation_fn:
+                    policy_kwargs["activation_fn"] = activation_fn
+            kwargs["policy_kwargs"] = policy_kwargs
         self.model = PPO('MlpPolicy', env, verbose=1, **kwargs)
         self.model.learn(total_timesteps=episodes, callback=callback)
         self.model.save(save_path)
