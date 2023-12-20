@@ -1,0 +1,10 @@
+experiment1:
+  -a: sac
+  -e: 1000
+  -r: success_time_and_distance
+  -s: models/sac_test1
+experiment2:
+  -a: ppo
+  -e: 1000
+  -r: success_time_and_distance
+  -s: models/ppo_test1
