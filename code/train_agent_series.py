@@ -71,11 +71,9 @@ def write_n_launch_slurm_script(series, job_name, slurm_args, experiment_args):
         fp.write(BASE_SCRIPT.format(
             job_name=job_name,
             **slurm_args,
-            experiment_args=' '.join(f'--{k} {v}' for k, v in experiment_args.items()),
+            experiment_args=' '.join(f'{k} {v}' for k, v in experiment_args.items()),
             series=series,
         ))
-
-    # submit the job to queue
     os.system(f'sbatch {job_file}')
 
 if __name__ == '__main__':
