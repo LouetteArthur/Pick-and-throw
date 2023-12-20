@@ -25,7 +25,7 @@ source ~/anaconda3/etc/profile.d/conda.sh
 conda activate Sim38
 
 # run experiment
-python3 train_agent.py -a sac -e 1000000 -r success_time_and_distance -s models/sac_5_sb3
+python3 train_agent.py {experiment_args}
 '''
 
 DEFAULT_SLURM_ARGS = {

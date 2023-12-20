@@ -23,8 +23,10 @@ if __name__ == '__main__':
     parser.add_argument('-m', '--pretrained_model', type=str, default=None, help='model to use')
     # reward function
     parser.add_argument('-r', '--reward', type=str, default="success", help='reward function')
-    #save path
+    # save path
     parser.add_argument('-s', '--save_path', type=str, default=None, help='path to save the model')
+    # hyperparameters
+    parser.add_argument('-hp', '--hyperparams', type=str, default=None, help='path to the hyperparameters')
 
     th.autograd.set_detect_anomaly(True)
     np.seterr(all="raise") 
@@ -35,6 +37,7 @@ if __name__ == '__main__':
     model_path = args.pretrained_model
     reward_name = args.reward
     save_path = args.save_path
+    hyperparams_name = args.hyperparams
 
     # start training
     start_time = time.time()
@@ -63,16 +66,18 @@ if __name__ == '__main__':
     # initialize wandb
     run = wandb.init(
     project="Tossing Flexpicker",
+    # We pass a run name (otherwise it’ll be randomly assigned, like sunshine-lollypop-10)
+    name=f"experiment_{agent_name}_{hyperparams_name}",
     config=config,
     sync_tensorboard=True,  # auto-upload sb3's tensorboard metrics
     )
 
     # train the agent
     if save_path is None:
-        save_path = f"models/{agent_name}"
+        save_path = f"models/{agent_name}_{hyperparams_name}"
 
     #read the parameters from the config file
-    path = f"hyperparams/{agent_name}.yaml"
+    path = f"hyperparams/{agent_name}_{hyperparams_name}.yaml"
     try:
         with open(path, 'r') as f:
             kwargs = yaml.load(f, Loader=SafeLoader)
