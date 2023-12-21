@@ -145,7 +145,7 @@ class td3Agent(Agent):
         policy_kwargs = kwargs.get("policy_kwargs", None)
         if policy_kwargs is not None:
             kwargs["policy_kwargs"] = policy_kwargs 
-        self.model = TD3('MlpPolicy', env, tensorboard_log="logs/TD3" , **kwargs)
+        self.model = TD3('MlpPolicy', env, **kwargs)
         self.model.learn(total_timesteps=episodes, callback=callback)
         self.model.save(save_path)
 
