@@ -65,7 +65,7 @@ class TossingFlexpicker(Env):
         self.physicsClientId = -1
         self.ownsPhysicsClient = 0
 
-        # Set the context space (x_object, y_object, x_bucket, y_bucket, bucket_width, bucket_length, bucket_orientation)
+        # Set the context space (x_object, y_object, x_bucket, y_bucket)
         self.observation_space = Box(low=np.float32(np.array([-R_WORKSPACE, -R_WORKSPACE, X_BUCKET_MIN, Y_BUCKET_MIN])), 
                                      high=np.float32(np.array([R_WORKSPACE, R_WORKSPACE, X_BUCKET_MAX, Y_BUCKET_MAX])), shape=(4,))
 

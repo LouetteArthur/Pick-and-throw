@@ -74,6 +74,8 @@ class ddpgAgent(Agent):
     def train(self, env, episodes, callback=None, save_path="models/ddpg", **kwargs):
         action_noise_type = kwargs.get("action_noise", None)
         action_noise_std = kwargs.get("action_noise_std", None)
+        #remove action noise std from kwargs
+        kwargs.pop("action_noise_std", None)
         if action_noise_type and action_noise_std:
             if action_noise_type == "NormalActionNoise":
                 action_noise = NormalActionNoise(mean=0, sigma=action_noise_std * env.action_space.shape[0])
@@ -87,8 +89,8 @@ class ddpgAgent(Agent):
         if policy_kwargs is not None:
             kwargs["policy_kwargs"] = policy_kwargs
 
-        self.model = DDPG('MlpPolicy', env, tensorboard_log="logs/DDPG", **kwargs)
-        self.model.learn(total_timesteps=episodes, callback=callback)
+        self.model = DDPG('MlpPolicy', env, tensorboard_log="logs/DDPG", verbose=1000, **kwargs)
+        self.model.learn(total_timesteps=episodes, log_interval=1000, callback=callback)
         self.model.save(save_path)
 
 class sacAgent(Agent):
@@ -111,8 +113,8 @@ class sacAgent(Agent):
         policy_kwargs = kwargs.get("policy_kwargs", None)
         if policy_kwargs is not None:
             kwargs["policy_kwargs"] = policy_kwargs 
-        self.model = SAC('MlpPolicy', env, verbose=0, **kwargs)
-        self.model.learn(total_timesteps=episodes, callback=callback)
+        self.model = SAC('MlpPolicy', env, verbose=1, **kwargs)
+        self.model.learn(total_timesteps=episodes, log_interval=1000, callback=callback)
         self.model.save(save_path)
 
 class td3Agent(Agent):
@@ -133,6 +135,8 @@ class td3Agent(Agent):
     def train(self, env, episodes, callback=None, save_path="models/td3_flexpicker", **kwargs):
         action_noise_type = kwargs.get("action_noise", None)
         action_noise_std = kwargs.get("action_noise_std", None)
+        #remove action noise std from kwargs
+        kwargs.pop("action_noise_std", None)
         if action_noise_type and action_noise_std:
             if action_noise_type == "NormalActionNoise":
                 action_noise = NormalActionNoise(mean=0, sigma=action_noise_std * env.action_space.shape[0])
@@ -145,8 +149,8 @@ class td3Agent(Agent):
         policy_kwargs = kwargs.get("policy_kwargs", None)
         if policy_kwargs is not None:
             kwargs["policy_kwargs"] = policy_kwargs 
-        self.model = TD3('MlpPolicy', env, **kwargs)
-        self.model.learn(total_timesteps=episodes, callback=callback)
+        self.model = TD3('MlpPolicy', env, verbose=1, **kwargs)
+        self.model.learn(total_timesteps=episodes, log_interval=1000, callback=callback)
         self.model.save(save_path)
 
 class ppoAgent(Agent):
@@ -173,6 +177,6 @@ class ppoAgent(Agent):
                 if activation_fn:
                     policy_kwargs["activation_fn"] = activation_fn
             kwargs["policy_kwargs"] = policy_kwargs
-        self.model = PPO('MlpPolicy', env, verbose=1, **kwargs)
+        self.model = PPO('MlpPolicy', env, verbose=1, log_interval=1000, **kwargs)
         self.model.learn(total_timesteps=episodes, callback=callback)
         self.model.save(save_path)
