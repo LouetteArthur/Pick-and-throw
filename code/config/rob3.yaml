@@ -1,0 +1,9 @@
+offset_x: 0.57 # difference between the x_0 and side of convoyer for robot and simulation [m]
+offset_y: 0.094 # difference between the center of the bucket for robot and simulation [m](0)
+offset_z: -1.498 # z coordinate at the conveyor [m] (0-1.498)
+
+WORKSPACE:
+  center: [0, 0] # center of the workspace of the IRB robot
+  radius: 800 # Radius of the circular workspace
+  z: [-1498, -1310] #lower bound is the height of the conveyor [mm], higher bound is the max heigh of the flexpicker
+  max_y: 600

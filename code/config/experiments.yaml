@@ -1,180 +1,180 @@
-sac_opt_1:
-  -a: sac
-  -e: 1000000
-  -r: success_time_and_distance
-  -s: models/sac_opt_1
-  -hp: opt
-sac_opt_2:
-  -a: sac
-  -e: 1000000
-  -r: success_time_and_distance
-  -s: models/sac_opt_2
-  -hp: opt
-sac_opt_3:
-  -a: sac
-  -e: 1000000
-  -r: success_time_and_distance
-  -s: models/sac_opt_3
-  -hp: opt
-sac_opt_4:
-  -a: sac
-  -e: 1000000
-  -r: success_time_and_distance
-  -s: models/sac_opt_4
-  -hp: opt
-sac_opt_5:
-  -a: sac
-  -e: 1000000
-  -r: success_time_and_distance
-  -s: models/sac_opt_5
-  -hp: opt
-sac_sb3_1:
-  -a: sac
-  -e: 1000000
-  -r: success_time_and_distance
-  -s: models/sac_sb3_1
-  -hp: sb3
-sac_sb3_2:
-  -a: sac
-  -e: 1000000
-  -r: success_time_and_distance
-  -s: models/sac_sb3_2
-  -hp: sb3
-sac_sb3_3:
-  -a: sac
-  -e: 1000000
-  -r: success_time_and_distance
-  -s: models/sac_sb3_3
-  -hp: sb3
-sac_sb3_4:
-  -a: sac
-  -e: 1000000
-  -r: success_time_and_distance
-  -s: models/sac_sb3_4
-  -hp: sb3
-sac_sb3_5:
-  -a: sac
-  -e: 1000000
-  -r: success_time_and_distance
-  -s: models/sac_sb3_5
-  -hp: sb3
+# sac_opt_1:
+#   -a: sac
+#   -e: 500000
+#   -r: success_time_and_distance
+#   -s: models/sac_opt_1
+#   -hp: opt
+# sac_opt_2:
+#   -a: sac
+#   -e: 500000
+#   -r: success_time_and_distance
+#   -s: models/sac_opt_2
+#   -hp: opt
+# sac_opt_3:
+#   -a: sac
+#   -e: 500000
+#   -r: success_time_and_distance
+#   -s: models/sac_opt_3
+#   -hp: opt
+# sac_opt_4:
+#   -a: sac
+#   -e: 500000
+#   -r: success_time_and_distance
+#   -s: models/sac_opt_4
+#   -hp: opt
+# sac_opt_5:
+#   -a: sac
+#   -e: 500000
+#   -r: success_time_and_distance
+#   -s: models/sac_opt_5
+#   -hp: opt
+# sac_sb3_1:
+#   -a: sac
+#   -e: 500000
+#   -r: success_time_and_distance
+#   -s: models/sac_sb3_1
+#   -hp: sb3
+# sac_sb3_2:
+#   -a: sac
+#   -e: 500000
+#   -r: success_time_and_distance
+#   -s: models/sac_sb3_2
+#   -hp: sb3
+# sac_sb3_3:
+#   -a: sac
+#   -e: 500000
+#   -r: success_time_and_distance
+#   -s: models/sac_sb3_3
+#   -hp: sb3
+# sac_sb3_4:
+#   -a: sac
+#   -e: 500000
+#   -r: success_time_and_distance
+#   -s: models/sac_sb3_4
+#   -hp: sb3
+# sac_sb3_5:
+#   -a: sac
+#   -e: 500000
+#   -r: success_time_and_distance
+#   -s: models/sac_sb3_5
+#   -hp: sb3
 ppo_opt_1:
   -a: ppo
-  -e: 1000000
+  -e: 500000
   -r: success_time_and_distance
   -s: models/ppo_opt_1
   -hp: opt
 ppo_opt_2:
   -a: ppo
-  -e: 1000000
+  -e: 500000
   -r: success_time_and_distance
   -s: models/ppo_opt_2
   -hp: opt
 ppo_opt_3:
   -a: ppo
-  -e: 1000000
+  -e: 500000
   -r: success_time_and_distance
   -s: models/ppo_opt_3
   -hp: opt
 ppo_opt_4:
   -a: ppo
-  -e: 1000000
+  -e: 500000
   -r: success_time_and_distance
   -s: models/ppo_opt_4
   -hp: opt
 ppo_opt_5:
   -a: ppo
-  -e: 1000000
+  -e: 500000
   -r: success_time_and_distance
   -s: models/ppo_opt_5
   -hp: opt
 ppo_sb3_1:
   -a: ppo
-  -e: 1000000
+  -e: 500000
   -r: success_time_and_distance
   -s: models/ppo_sb3_1
   -hp: sb3
 ppo_sb3_2:
   -a: ppo
-  -e: 1000000
+  -e: 500000
   -r: success_time_and_distance
   -s: models/ppo_sb3_2
   -hp: sb3
 ppo_sb3_3:
   -a: ppo
-  -e: 1000000
+  -e: 500000
   -r: success_time_and_distance
   -s: models/ppo_sb3_3
   -hp: sb3
 ppo_sb3_4:
   -a: ppo
-  -e: 1000000
+  -e: 500000
   -r: success_time_and_distance
   -s: models/ppo_sb3_4
   -hp: sb3
 ppo_sb3_5:
   -a: ppo
-  -e: 1000000
+  -e: 500000
   -r: success_time_and_distance
   -s: models/ppo_sb3_5
   -hp: sb3
 td3_opt_1:
   -a: td3
-  -e: 1000000
+  -e: 500000
   -r: success_time_and_distance
   -s: models/td3_opt_1
   -hp: opt
 td3_opt_2:
   -a: td3
-  -e: 1000000
+  -e: 500000
   -r: success_time_and_distance
   -s: models/td3_opt_2
   -hp: opt
 td3_opt_3:
   -a: td3
-  -e: 1000000
+  -e: 500000
   -r: success_time_and_distance
   -s: models/td3_opt_3
   -hp: opt
 td3_opt_4:
   -a: td3
-  -e: 1000000
+  -e: 500000
   -r: success_time_and_distance
   -s: models/td3_opt_4
   -hp: opt
 td3_opt_5:
   -a: td3
-  -e: 1000000
+  -e: 500000
   -r: success_time_and_distance
   -s: models/td3_opt_5
   -hp: opt
 td3_sb3_1:
   -a: td3
-  -e: 1000000
+  -e: 500000
   -r: success_time_and_distance
   -s: models/td3_sb3_1
   -hp: sb3
 td3_sb3_2:
   -a: td3
-  -e: 1000000
+  -e: 500000
   -r: success_time_and_distance
   -s: models/td3_sb3_2
   -hp: sb3
 td3_sb3_3:
   -a: td3
-  -e: 1000000
+  -e: 500000
   -r: success_time_and_distance
   -s: models/td3_sb3_3
   -hp: sb3
 td3_sb3_4:
   -a: td3
-  -e: 1000000
+  -e: 500000
   -r: success_time_and_distance
   -s: models/td3_sb3_4
   -hp: sb3
 td3_sb3_5:
   -a: td3
-  -e: 1000000
+  -e: 500000
   -r: success_time_and_distance
   -s: models/td3_sb3_5
   -hp: sb3
