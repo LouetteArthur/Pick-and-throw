@@ -1,1 +1,2 @@
-hyperparams: 
+hyperparams:
+    tensorboard_log: "logs/SAC_sb3"

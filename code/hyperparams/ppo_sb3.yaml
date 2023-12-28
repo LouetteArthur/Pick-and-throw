@@ -1,1 +1,2 @@
-hyperparams: 
+hyperparams:
+  tensorboard_log: "logs/PPO_sb3"

@@ -1,5 +1,5 @@
 hyperparams: 
-  tensorboard_log: "logs/PPO"
+  tensorboard_log: "logs/PPO_opt"
   batch_size: 128
   n_steps: 2048
   learning_rate: 0.012449020379473656

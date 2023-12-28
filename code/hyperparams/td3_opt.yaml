@@ -1,4 +1,5 @@
 hyperparams:
+    tensorboard_log: "logs/TD3_opt"
     learning_rate: 0.006643119832737399
     batch_size: 512
     tau: 0.02

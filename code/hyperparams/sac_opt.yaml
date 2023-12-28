@@ -1,5 +1,5 @@
 hyperparams:
-  tensorboard_log: "logs/SAC"
+  tensorboard_log: "logs/SAC_opt"
   learning_rate: 0.0015957233286069618
   batch_size: 16
   learning_starts: 100
