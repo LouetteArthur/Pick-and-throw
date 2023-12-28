@@ -265,8 +265,6 @@ class Rewardfunction():
             reward = reward.detach().numpy()[0]
             return reward
         else:
-            pred = self.pickAndPlaceReward(torch.tensor(self.env.init_obs))
-            reward = pred - self.env.action_time -  self.env.distance_impact_to_bucket
-            reward = reward.detach().numpy()[0]
+            reward = - self.env.action_time -  self.env.distance_impact_to_bucket
             return reward
 
