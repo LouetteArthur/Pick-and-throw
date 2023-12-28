@@ -241,6 +241,7 @@ class TossingFlexpicker(Env):
         delay = round(0.171/TIME_STEP)
         if self.domain_randomization:
             delay = round(np.random.uniform(0.150/TIME_STEP, 0.190/TIME_STEP))
+        delay = 0
         
         self.max_time_step = len(lin_pos)
         for i in range(self.max_time_step):
@@ -265,7 +266,7 @@ class TossingFlexpicker(Env):
                 self.distance_ratio = np.clip(self.distance_release/self.distance_cube_bucket, 0, 1)
                 reward, terminated = self.get_reward_and_is_terminated()
                 if terminated:
-                    return self.get_observation(), reward, terminated, False, {"is_success": self.success(), "action_time": self.action_time, "distance_ratio": self.distance_ratio}
+                    return self.get_observation(), reward, terminated, False, {"is_success": self.success(), "action_time": self.action_time, "distance_ratio": self.distance_ratio, "distance_impact": self.distance_impact_to_bucket}
 
         if not self.has_thrown:
             self.action_time = self.max_time_step*TIME_STEP
@@ -289,7 +290,7 @@ class TossingFlexpicker(Env):
             self.distance_ratio = np.clip(self.distance_release/self.distance_cube_bucket, 0, 1)
             reward, terminated = self.get_reward_and_is_terminated()
 
-        return self.get_observation(), reward, terminated, False, {"is_success": self.success(), "action_time": np.round(self.action_time, 3), "distance_ratio": self.distance_ratio}
+        return self.get_observation(), reward, terminated, False, {"is_success": self.success(), "action_time": np.round(self.action_time, 3), "distance_ratio": self.distance_ratio, "distance_impact": self.distance_impact_to_bucket}
     
 
     def success(self):

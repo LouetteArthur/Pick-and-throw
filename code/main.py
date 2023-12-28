@@ -24,6 +24,7 @@ def agent_control(GUI=False, agent_name='goToBucket', model=None, episodes=10, v
     success_reward = []
     action_time = []
     distance_ratio = []
+    distance_impact = []
     distance_time_dict = dict()
     if agent_name in a.implemented_agents:
         agent = getattr(a, agent_name + 'Agent')()
@@ -52,6 +53,7 @@ def agent_control(GUI=False, agent_name='goToBucket', model=None, episodes=10, v
             rewards.append(reward)
             action_time.append(info['action_time'])
             distance_ratio.append(info['distance_ratio'])
+            distance_impact.append(info['distance_impact'])
             if info['is_success']:
                 success_reward.append(reward)
             if verbose:
@@ -69,13 +71,17 @@ def agent_control(GUI=False, agent_name='goToBucket', model=None, episodes=10, v
         print(f"Success reward: {np.mean(success_reward)}")
     print(f"Action time: {np.round(np.mean(action_time),3)} ({np.round(np.std(action_time), 3)})")
     print(f"Distance ratio: {np.round(np.mean(distance_ratio),3)} ({np.round(np.std(distance_ratio),3)})")
+    print(f"Distance impact: {np.round(np.mean(distance_impact),3)} ({np.round(np.std(distance_impact),3)})")
+    #print median of distance impact
+    print(f"Median distance impact: {np.median(distance_impact)}")
     if save_data:
         # Create a DataFrame
         df = pd.DataFrame({
             'Success': success,
             'Reward': rewards,
             'Time': action_time,
-            'Distance Ratio': distance_ratio
+            'Distance Ratio': distance_ratio,
+            'Distance Impact': distance_impact,
         })
 
         # Save DataFrame to a CSV file
