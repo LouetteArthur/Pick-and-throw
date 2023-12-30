@@ -1,4 +1,4 @@
-# PyBulletWasteThrower
+# RL Pick-and-Throw
 ## Project Description
 
 This project models an ABB FlexPicker with PyBullet in order to throw scraps into designated buckets.
