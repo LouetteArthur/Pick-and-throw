@@ -240,8 +240,7 @@ class TossingFlexpicker(Env):
         # the gripper opening delay is supposed to be 171ms according to the datasheet 
         delay = round(0.171/TIME_STEP)
         if self.domain_randomization:
-            delay = round(np.random.uniform(0.150/TIME_STEP, 0.190/TIME_STEP))
-        delay = 0
+            delay = round(np.random.uniform(0.161/TIME_STEP, 0.181/TIME_STEP))
         
         self.max_time_step = len(lin_pos)
         for i in range(self.max_time_step):

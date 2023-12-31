@@ -89,7 +89,7 @@ class ddpgAgent(Agent):
         if policy_kwargs is not None:
             kwargs["policy_kwargs"] = policy_kwargs
 
-        self.model = DDPG('MlpPolicy', env, tensorboard_log="logs/DDPG", verbose=1000, **kwargs)
+        self.model = DDPG('MlpPolicy', env, tensorboard_log="logs/DDPG", verbose=1, **kwargs)
         self.model.learn(total_timesteps=episodes, log_interval=1000, callback=callback)
         self.model.save(save_path)
 
@@ -177,6 +177,6 @@ class ppoAgent(Agent):
                 if activation_fn:
                     policy_kwargs["activation_fn"] = activation_fn
             kwargs["policy_kwargs"] = policy_kwargs
-        self.model = PPO('MlpPolicy', env, verbose=1, log_interval=1000, **kwargs)
+        self.model = PPO('MlpPolicy', env, verbose=1, **kwargs)
         self.model.learn(total_timesteps=episodes, callback=callback)
         self.model.save(save_path)
