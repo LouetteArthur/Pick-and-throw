@@ -69,9 +69,9 @@ class TossingFlexpicker(Env):
         self.observation_space = Box(low=np.float32(np.array([-R_WORKSPACE, -R_WORKSPACE, X_BUCKET_MIN, Y_BUCKET_MIN])), 
                                      high=np.float32(np.array([R_WORKSPACE, R_WORKSPACE, X_BUCKET_MAX, Y_BUCKET_MAX])), shape=(4,))
 
-        # Set the action space (y_release, z_release, speed, y_target)
-        low = np.float32(np.array([-R_WORKSPACE, 0.06, MIN_SPEED_FOR_THROW, -R_WORKSPACE]))
-        high = np.float32(np.array([R_WORKSPACE, 0.2, MAX_SPEED_FLEXPICKER, R_WORKSPACE]))
+        # Set the action space (y_release, speed, z_target, y_target)
+        low = np.float32(np.array([-R_WORKSPACE, MIN_SPEED_FOR_THROW, 0.06, -R_WORKSPACE]))
+        high = np.float32(np.array([R_WORKSPACE, MAX_SPEED_FLEXPICKER, Z_WORKSPACE, R_WORKSPACE]))
         self.action_normalizer = utils.ActionSpaceNormalizer(low, high)
         low_n = self.action_normalizer.normalize(low)
         high_n = self.action_normalizer.normalize(high)
@@ -154,6 +154,9 @@ class TossingFlexpicker(Env):
 
         if action[0] > R_WORKSPACE:
             action[0] = R_WORKSPACE
+        
+        if action[2] > Z_WORKSPACE:
+            action[2] = Z_WORKSPACE
 
         if action[3] > R_WORKSPACE:
             action[3] = R_WORKSPACE
@@ -175,28 +178,35 @@ class TossingFlexpicker(Env):
 
     def step(self, action):
         """
-        action: (x_release, z_release, speed, x_target) for End Effector Position Control
+        action: (x_release, speed, z_target, x_target) for End Effector Position Control
         """
         action = self.action_normalizer.denormalize(action)
         self.action = self.legal_action(action)
 
         # compute the release position
         init_pos, init_orn = self._p.getLinkState(self.robot.id, self.robot.end_effector_id)[0:2]
-        y_release = action[0]
-        z_release = action[1]
+        z_target = action[2]
+        y_target = action[3]
         m_x = (self.bucket_place_position[0] - init_pos[0]) / (self.bucket_place_position[1] - init_pos[1])
         offset_x = self.bucket_place_position[0] - m_x * self.bucket_place_position[1]
-        x_release = m_x * y_release + offset_x
-        release_pos = (x_release, y_release, z_release)
+        x_target = m_x * y_target + offset_x
+        target_pos = (x_target, y_target, z_target)
         #print("desired action after first calculation", release_pos + (action[2],))
 
         # compute the target position on the line between the initial position and the release position
-        y_target = action[3]
-        x_target = m_x*y_target + offset_x
-        m_z = (release_pos[2] - init_pos[2])/(release_pos[1] - init_pos[1])
-        offset_z = release_pos[2] - m_z*release_pos[1]
-        z_target = m_z*y_target + offset_z
-        target_pos = (x_target, y_target, z_target)
+        y_release = action[0]
+        x_release = m_x*y_release + offset_x
+        m_z = (target_pos[2] - init_pos[2])/(target_pos[1] - init_pos[1])
+        offset_z = target_pos[2] - m_z*target_pos[1]
+        z_release = m_z*y_release + offset_z
+        release_pos = (x_release, y_release, z_release)
+        #check that release and target position are in workspace
+        assert release_pos[0] <= R_WORKSPACE and release_pos[0] >= -R_WORKSPACE, "release position x is not in workspace"
+        assert release_pos[1] <= R_WORKSPACE and release_pos[1] >= -R_WORKSPACE, "release position y is not in workspace"
+        assert release_pos[2] <= Z_WORKSPACE and release_pos[2] >= 0, "release position z is not in workspace"
+        assert target_pos[0] <= R_WORKSPACE and target_pos[0] >= -R_WORKSPACE, "target position x is not in workspace"
+        assert target_pos[1] <= R_WORKSPACE and target_pos[1] >= -R_WORKSPACE, "target position y is not in workspace"
+        assert target_pos[2] <= Z_WORKSPACE and target_pos[2] >= 0, "target position z is not in workspace"
         #print("desired action after second calculation", target_pos + (action[2],))
 
         # compute yaw
@@ -208,12 +218,12 @@ class TossingFlexpicker(Env):
 
         # compute linear trajectory
         target_orn = self._p.getQuaternionFromEuler([0,0,yaw])
-        self.speed = action[2]
-        scaling_factor = action[2]/MAX_SPEED_FLEXPICKER
+        self.speed = action[1]
+        scaling_factor = action[1]/MAX_SPEED_FLEXPICKER
         lin_pos, orn, velocities = utils.ctraj_pilz_KDL(init_pos, init_orn, target_pos, target_orn, MAX_SPEED_FLEXPICKER, MAX_ACCELERATION_FLEXPICKER, scaling_factor, 1, MAX_ROT_SPEED, TIME_STEP)
         #plt.plot(np.sqrt(velocities[:, 0]**2+velocities[:, 1]**2+velocities[:, 2]**2))
         # #plot a an horizontal line at the desired action speed of the robot
-        # plt.plot(np.ones(velocities.shape[0])*action[2])
+        # plt.plot(np.ones(velocities.shape[0])*action[1])
         # plt.show()
         # #plot in 3D the trajectory
         # fig = plt.figure()
