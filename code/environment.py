@@ -10,12 +10,22 @@ from gymnasium.spaces import Discrete, Box, Dict
 from pybullet_utils import bullet_client as bc
 import matplotlib.pyplot as plt
 
+#Robot parameters
 MAX_SPEED_FLEXPICKER = 10
 MAX_ROT_SPEED=2880*np.pi/180
 MIN_SPEED_FOR_THROW =0.25
 MAX_ACCELERATION_FLEXPICKER = 100
-TIME_STEP = 1/240
 
+#Simulation parameters
+TIME_STEP = 1/240
+MAX_SEED = 100000000
+BUCKET_WIDTH = 0.21
+CONVEYOR_WIDTH = 1.4
+BUCKET_LENGTH = 0.72
+CONVEYOR_HEIGHT = 0.17 # used to put the conveyor at z=0
+MAX_STEP_SIMULATION = 5/TIME_STEP # 5 seconds max for one throw
+
+#Environment parameters
 R_WORKSPACE = 0.8
 Z_WORKSPACE = 0.2
 
@@ -34,13 +44,11 @@ BUCKET_WIDTH_MAX = 0.21
 BUCKET_LENGTH_MIN = 0.72
 BUCKET_LENGTH_MAX = 0.72
 
-MAX_SEED = 100000000
-BUCKET_WIDTH = 0.21
-CONVEYOR_WIDTH = 1.4
-BUCKET_LENGTH = 0.72
-CONVEYOR_HEIGHT = 0.17 # used to put the conveyor at z=0
+MIN_DELAY_START_OPEN_GRIPPER = 0.01
+MAX_DELAY_START_OPEN_GRIPPER = 0.1
 
-MAX_STEP_SIMULATION = 5/TIME_STEP # 5 seconds max for one throw
+MIN_DELAY_OPEN_GRIPPER = 0.01
+MAX_DELAY_OPEN_GRIPPER = 0.2
 
 class TossingFlexpicker(Env):
     def __init__(self, GUI=True, domain_randomization=True, reward_name="success", seed=None):
@@ -65,9 +73,10 @@ class TossingFlexpicker(Env):
         self.physicsClientId = -1
         self.ownsPhysicsClient = 0
 
-        # Set the context space (x_object, y_object, x_bucket, y_bucket)
-        self.observation_space = Box(low=np.float32(np.array([-R_WORKSPACE, -R_WORKSPACE, X_BUCKET_MIN, Y_BUCKET_MIN])), 
-                                     high=np.float32(np.array([R_WORKSPACE, R_WORKSPACE, X_BUCKET_MAX, Y_BUCKET_MAX])), shape=(4,))
+        # Set the context space (x_object, y_object, x_bucket, y_bucket, t_start_open, t_open)
+        self.observation_space = Box(low=np.float32(np.array([-R_WORKSPACE, -R_WORKSPACE, X_BUCKET_MIN, Y_BUCKET_MIN, MIN_DELAY_START_OPEN_GRIPPER, MIN_DELAY_OPEN_GRIPPER])),
+                                     high=np.float32(np.array([R_WORKSPACE, R_WORKSPACE, X_BUCKET_MAX, Y_BUCKET_MAX, MAX_DELAY_START_OPEN_GRIPPER, MAX_DELAY_OPEN_GRIPPER])),
+                                     shape=(6,), dtype=np.float32)
 
         # Set the action space (y_release, speed, z_target, y_target)
         low = np.float32(np.array([-R_WORKSPACE, MIN_SPEED_FOR_THROW, 0.06, -R_WORKSPACE]))
@@ -105,10 +114,14 @@ class TossingFlexpicker(Env):
 
         # Load the robot
         initial_height_flexpicker = 0.6
-        self.robot =  Flexpicker(position=self.cube_init_position[:2] +(initial_height_flexpicker,), orientation=p.getQuaternionFromEuler([0,np.pi,cube_orientation[2]-np.pi/2]), GUI=GUI, physicsClient=self._p)
+        self.robot =  Flexpicker(delay_to_open=0.171, position=self.cube_init_position[:2] +(initial_height_flexpicker,), orientation=p.getQuaternionFromEuler([0,np.pi,cube_orientation[2]-np.pi/2]), GUI=GUI, physicsClient=self._p)
 
         self._p.resetDebugVisualizerCamera(cameraDistance=2.5, cameraYaw=-0, cameraPitch=-35, cameraTargetPosition=[0,0,0])
         self.robot.grasp(self.object_id, self.bucket_place_position)
+
+        #gripper variable
+        self.delay_start_to_open = random.uniform(MIN_DELAY_START_OPEN_GRIPPER, MAX_DELAY_START_OPEN_GRIPPER)
+        self.delay_start_to_open = random.uniform(MIN_DELAY_OPEN_GRIPPER, MAX_DELAY_OPEN_GRIPPER)
 
         # create the variables for the toss and the reward associated urdf
         self.has_thrown = False
@@ -149,17 +162,18 @@ class TossingFlexpicker(Env):
         """
         Check if the action is legal and maps it to the legal action space if not
         """
+        epsilon = 0.001
         if action[0] < self._p.getLinkState(self.robot.id, self.robot.end_effector_id)[0][1]:
             action[0] = self._p.getLinkState(self.robot.id, self.robot.end_effector_id)[0][1]+0.01
 
         if action[0] > R_WORKSPACE:
-            action[0] = R_WORKSPACE
+            action[0] = R_WORKSPACE-epsilon
         
         if action[2] > Z_WORKSPACE:
-            action[2] = Z_WORKSPACE
+            action[2] = Z_WORKSPACE-epsilon
 
         if action[3] > R_WORKSPACE:
-            action[3] = R_WORKSPACE
+            action[3] = R_WORKSPACE-epsilon
 
         if action[3] < action[0]:
             action[3] = action[0]
@@ -201,6 +215,8 @@ class TossingFlexpicker(Env):
         z_release = m_z*y_release + offset_z
         release_pos = (x_release, y_release, z_release)
         #check that release and target position are in workspace
+        #print("release position", release_pos)
+        # print("target position", target_pos)
         assert release_pos[0] <= R_WORKSPACE and release_pos[0] >= -R_WORKSPACE, "release position x is not in workspace"
         assert release_pos[1] <= R_WORKSPACE and release_pos[1] >= -R_WORKSPACE, "release position y is not in workspace"
         assert release_pos[2] <= Z_WORKSPACE and release_pos[2] >= 0, "release position z is not in workspace"
@@ -248,9 +264,9 @@ class TossingFlexpicker(Env):
         #print("desired action after orocos calculation", lin_pos[-1] + (np.linalg.norm(velocities[-1][:3]),))
 
         # the gripper opening delay is supposed to be 171ms according to the datasheet 
-        delay = round(0.171/TIME_STEP)
+        delay = round(self.delay_start_to_open/TIME_STEP)
         if self.domain_randomization:
-            delay = round(np.random.uniform(0.161/TIME_STEP, 0.181/TIME_STEP))
+            delay = round(np.random.normal(self.delay_start_to_open, 0.005)/TIME_STEP)
         
         self.max_time_step = len(lin_pos)
         for i in range(self.max_time_step):
@@ -351,7 +367,7 @@ class TossingFlexpicker(Env):
         observation: (x_object, y_object, x_bucket, y_bucket)
         """
         position, _ = self._p.getBasePositionAndOrientation(self.object_id)
-        return np.float32(np.array((position[:2] + (self.bucket_pos[0],) + (self.bucket_pos[1],))))
+        return np.float32(np.array((position[:2] + (self.bucket_pos[0],) + (self.bucket_pos[1],) + (self.delay_start_to_open,) + (self.delay_start_to_open,))))
 
     def reset(self, seed=None, options=None):
         if (self.physicsClientId < 0):
@@ -395,8 +411,12 @@ class TossingFlexpicker(Env):
 
             # Load the robot
             initial_height_flexpicker = 0.6
-            self.robot =  Flexpicker(position=self.cube_init_position[:2] +(initial_height_flexpicker,), orientation=self._p.getQuaternionFromEuler([0,np.pi,cube_orientation[2]-np.pi/2]), GUI=self.GUI, physicsClient=self._p)
+            self.robot =  Flexpicker(delay_to_open=0.171, position=self.cube_init_position[:2] +(initial_height_flexpicker,), orientation=self._p.getQuaternionFromEuler([0,np.pi,cube_orientation[2]-np.pi/2]), GUI=self.GUI, physicsClient=self._p)
             self.robot.grasp(self.object_id, self.bucket_place_position)
+
+            #gripper variable
+            self.delay_start_to_open = random.uniform(MIN_DELAY_START_OPEN_GRIPPER, MAX_DELAY_START_OPEN_GRIPPER)
+            self.delay_start_to_open = random.uniform(MIN_DELAY_OPEN_GRIPPER, MAX_DELAY_OPEN_GRIPPER)
 
             # reset the variables for the toss and the reward associated
             self.has_thrown = False
@@ -437,8 +457,12 @@ class TossingFlexpicker(Env):
             
             # Load the robot
             initial_height_flexpicker = 0.6
-            self.robot =  Flexpicker(position=self.cube_init_position[:2] +(initial_height_flexpicker,), orientation=p.getQuaternionFromEuler([0,np.pi,cube_orientation[2]-np.pi/2]), GUI=self.GUI, physicsClient=self._p)
+            self.robot =  Flexpicker(delay_to_open=0.171, position=self.cube_init_position[:2] +(initial_height_flexpicker,), orientation=p.getQuaternionFromEuler([0,np.pi,cube_orientation[2]-np.pi/2]), GUI=self.GUI, physicsClient=self._p)
             self.robot.grasp(self.object_id, self.bucket_place_position)
+
+            #gripper variable
+            self.delay_start_to_open = random.uniform(MIN_DELAY_START_OPEN_GRIPPER, MAX_DELAY_START_OPEN_GRIPPER)
+            self.delay_start_to_open = random.uniform(MIN_DELAY_OPEN_GRIPPER, MAX_DELAY_OPEN_GRIPPER)
 
             # reset the variables for the toss and the reward associated
             self.has_thrown = False

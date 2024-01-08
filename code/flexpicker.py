@@ -4,7 +4,7 @@ import numpy as np
 from collections import namedtuple
 
 class Flexpicker:
-    def __init__(self, position=[0,0,1], orientation=p.getQuaternionFromEuler([0,3.141,0]), GUI=True, physicsClient=None):
+    def __init__(self, delay_to_open, position=[0,0,1], orientation=p.getQuaternionFromEuler([0,3.141,0]),GUI=True, physicsClient=None):
         # The flexpicker is only represented by a gripper for now
         self._p = physicsClient
         self.id = self._p.loadURDF("urdf/flexpicker.urdf", position, orientation)
@@ -14,6 +14,7 @@ class Flexpicker:
         self.gripper_range = [0, 0.04]
         self.end_effector_id = 6
         self.GUI = GUI
+        self.delay_to_open = delay_to_open
 
     def __parse_joint_info__(self):
         numJoints = self._p.getNumJoints(self.id)
@@ -117,8 +118,9 @@ class Flexpicker:
 
     def move_gripper(self, open_length):
         # open the gripper to a given length
-        self._p.setJointMotorControl2(self.id, 7, self._p.POSITION_CONTROL, open_length, force=self.joints[7].maxForce, maxVelocity=self.joints[7].maxVelocity)
-        self._p.setJointMotorControl2(self.id, 8, self._p.POSITION_CONTROL, -open_length, force=self.joints[8].maxForce, maxVelocity=self.joints[8].maxVelocity)
+        max_velocity = self.gripper_range[1] / self.delay_to_open
+        self._p.setJointMotorControl2(self.id, 7, self._p.POSITION_CONTROL, open_length, force=self.joints[7].maxForce, maxVelocity=max_velocity)
+        self._p.setJointMotorControl2(self.id, 8, self._p.POSITION_CONTROL, -open_length, force=self.joints[8].maxForce, maxVelocity=max_velocity)
 
     def is_gripper_open(self):
         # check if the gripper is open
