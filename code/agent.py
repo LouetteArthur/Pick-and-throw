@@ -3,7 +3,7 @@ from stable_baselines3 import SAC, DDPG, TD3, PPO
 from stable_baselines3.common.noise import NormalActionNoise, OrnsteinUhlenbeckActionNoise
 import random
 import torch.nn as nn
-from related_work.analytic_throw_2d import main
+from related_work.time_opt_PaT import main
 
 bucket_LENGTH = 0.72
 class UnhandledAgentException(Exception):
@@ -34,9 +34,9 @@ class goToBucketAgent(Agent):
         super().__init__()
 
     def act(self, env):
-        y_release = env.bucket_place_position[1]
+        y_target = env.bucket_place_position[1]
         z_target = env.bucket_place_position[2]
-        y_target = y_release
+        y_release = y_target
         action = np.array([y_release, 10, z_target, y_target])
         action = env.action_normalizer.normalize(action)
         return action
@@ -47,12 +47,9 @@ class optimAgent(Agent):
 
     def act(self, env):
         error = 0.001
-        pos_obj = env._p.getBasePositionAndOrientation(env.object_id)[0]
-        #print("pos_obj", pos_obj)
+        pos_obj = env._p.getLinkState(env.robot.id, env.robot.end_effector_id)[0]
         x_r, y_r, z_r, v = main(pos_obj, env.bucket_place_position[:2] + (0.07, ), error)
-        #print("desired action", pr_and_v)
-        action = [y_r, v, z_r, 2*y_r - pos_obj[1]]
-        print(action)
+        action = [y_r, v, 2*z_r-pos_obj[2], 2*y_r - pos_obj[1]]
         action = env.action_normalizer.normalize(action)
         return np.float32(action)
 
