@@ -148,7 +148,7 @@ class PickAndPlaceReward(nn.Module):
     '''
     def __init__(self):
         super(PickAndPlaceReward, self).__init__()
-        self.fc1 = nn.Linear(4, 100)
+        self.fc1 = nn.Linear(6, 100)
         self.fc2 = nn.Linear(100, 100)
         self.fc3 = nn.Linear(100, 1)
 
@@ -176,7 +176,7 @@ class PickAndPlaceReward(nn.Module):
                 observation = np.array(env.get_observation())
                 observation = torch.tensor(np.array(observation), dtype=torch.float32).to(device)
                 action = agent.act(env)
-                _, _, done, info = env.step(action)
+                _, _, done, _, info = env.step(action)
                 optimizer.zero_grad()
                 action_time = torch.tensor(np.array(info['action_time'], dtype=np.float32)).unsqueeze(0).to(device)
                 pred = self.forward(observation)
