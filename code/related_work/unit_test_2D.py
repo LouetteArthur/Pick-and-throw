@@ -1,6 +1,6 @@
 import unittest
 import numpy as np
-from analytic_throw_2d import main
+from time_opt_PaT import main
 
 class TestAnalyticThrow(unittest.TestCase):
     def test_main(self):
