@@ -11,12 +11,12 @@ import matplotlib.pyplot as plt
 from scipy.stats import linregress
 import pandas as pd
 
-def agent_control(GUI=False, agent_name='goToBucket', model=None, episodes=10, verbose=False, reward_name='success', seed=None, save_data=None):
+def agent_control(GUI=False, agent_name='goToBucket', model=None, episodes=10, verbose=False, reward_name='success', seed=None, save_data=None, domain_randomization=False):
     # fix random seed
     if seed is not None:
-        env = TossingFlexpicker(GUI=GUI, reward_name=reward_name, seed=seed)
+        env = TossingFlexpicker(GUI=GUI, reward_name=reward_name, seed=seed, domain_randomization=domain_randomization)
     else:
-        env = TossingFlexpicker(GUI=GUI,  reward_name=reward_name)
+        env = TossingFlexpicker(GUI=GUI,  reward_name=reward_name, domain_randomization=domain_randomization)
 
     # load the agent
     success = []
@@ -107,6 +107,8 @@ if __name__ == '__main__':
     parser.add_argument('-s', '--seed', type=int, default=None, help='seed')
     #plot distance vs time
     parser.add_argument('-d', '--save_data', type=str, default=None, help='save the results to a csv')
+    # use domain randomization
+    parser.add_argument('-dr', '--domain_randomization', type=int, default=False, help='use domain randomization')
 
     # Argument values
     args = parser.parse_args()
@@ -118,8 +120,9 @@ if __name__ == '__main__':
     reward_name = args.reward
     seed = args.seed
     save_data = args.save_data
+    domain_randomization = args.domain_randomization
 
     start_time = time.time()
-    agent_control(gui, agent, model, episodes, verbose, reward_name, seed, save_data)
+    agent_control(gui, agent, model, episodes, verbose, reward_name, seed, save_data, domain_randomization)
     print("--- %s seconds ---" % (time.time() - start_time))
 
