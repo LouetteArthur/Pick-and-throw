@@ -170,14 +170,14 @@ class TossingFlexpicker(Env):
         if action[0] < self._p.getLinkState(self.robot.id, self.robot.end_effector_id)[0][1]:
             action[0] = self._p.getLinkState(self.robot.id, self.robot.end_effector_id)[0][1]+0.01
 
-        if action[0] > R_WORKSPACE:
-            action[0] = R_WORKSPACE-epsilon
+        if action[0] > self.bucket_place_position[1]:
+            action[0] =  self.bucket_place_position[1]-epsilon
         
         if action[2] > Z_WORKSPACE:
             action[2] = Z_WORKSPACE-epsilon
 
-        if action[3] > R_WORKSPACE:
-            action[3] = R_WORKSPACE-epsilon
+        if action[3] > self.bucket_place_position[1]:
+            action[3] =  self.bucket_place_position[1]-epsilon
 
         if action[3] < action[0]:
             action[3] = action[0]
