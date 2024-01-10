@@ -20,7 +20,7 @@ def compute_optimal_release(x0, z0, xf, zf, max_distance, error):
     bounds=[(eps, 10),
             (eps,100),
             (x0, max_distance),
-            (eps, 0.2)]
+            (z0, 0.18)]
 
     def constraint1(x):
         return x[0]/x[1] - x[0]/J

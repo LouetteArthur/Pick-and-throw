@@ -9,6 +9,7 @@ from gymnasium import Env
 from gymnasium.spaces import Discrete, Box, Dict
 from pybullet_utils import bullet_client as bc
 import matplotlib.pyplot as plt
+import yaml
 
 #Robot parameters
 MAX_SPEED_FLEXPICKER = 10
@@ -17,38 +18,13 @@ MIN_SPEED_FOR_THROW =0.25
 MAX_ACCELERATION_FLEXPICKER = 100
 
 #Simulation parameters
-TIME_STEP = 1/240
+TIME_STEP = 1/1000
 MAX_SEED = 100000000
 BUCKET_WIDTH = 0.21
 CONVEYOR_WIDTH = 1.4
 BUCKET_LENGTH = 0.72
 CONVEYOR_HEIGHT = 0.17 # used to put the conveyor at z=0
 MAX_STEP_SIMULATION = 5/TIME_STEP # 5 seconds max for one throw
-
-#Environment parameters
-R_WORKSPACE = 0.8
-Z_WORKSPACE = 0.2
-
-X_BUCKET_MIN = -0.8
-X_BUCKET_MAX = 0.8
-
-Y_BUCKET_MIN = 0.6
-Y_BUCKET_MAX = 1.5
-
-ORIENTATION_BUCKET_MIN = 0
-ORIENTATION_BUCKET_MAX = np.pi
-
-BUCKET_WIDTH_MIN = 0.21
-BUCKET_WIDTH_MAX = 0.21
-
-BUCKET_LENGTH_MIN = 0.72
-BUCKET_LENGTH_MAX = 0.72
-
-MIN_DELAY_START_OPEN_GRIPPER = 0.01
-MAX_DELAY_START_OPEN_GRIPPER = 0.2
-
-MIN_DELAY_OPEN_GRIPPER = 0.01
-MAX_DELAY_OPEN_GRIPPER = 0.2
 
 class TossingFlexpicker(Env):
     def __init__(self, GUI=True, domain_randomization=True, reward_name="success", seed=None):
@@ -57,6 +33,21 @@ class TossingFlexpicker(Env):
         user_control: True for user control, False for automatic control
         """
         super(TossingFlexpicker, self).__init__()
+
+        # read the boundaries of the workspace in the config file (yaml)
+        with open("config/workspace.yaml", 'r') as workspace_file:
+            workspace = yaml.safe_load(workspace_file)
+
+        self.workspace = workspace['workspace']
+        self.x_min = self.workspace['x_min']
+        self.x_max = self.workspace['x_max']
+        self.y_min = self.workspace['y_min']
+        self.y_max = self.workspace['y_max']
+        self.z_min = self.workspace['z_min']
+        self.z_max = self.workspace['z_max']
+        self.gripper_opening_reaction_time = self.workspace['gripper_opening_reaction_time']
+        self.gripper_opening_time = self.workspace['gripper_opening_time']
+
         # max 5 seconds
         self.max_step_simulation = MAX_STEP_SIMULATION
         
@@ -73,14 +64,14 @@ class TossingFlexpicker(Env):
         self.physicsClientId = -1
         self.ownsPhysicsClient = 0
 
-        # Set the context space (x_object, y_object, x_bucket, y_bucket, t_start_open, t_open)
-        self.observation_space = Box(low=np.float32(np.array([-R_WORKSPACE, -R_WORKSPACE, X_BUCKET_MIN, Y_BUCKET_MIN, MIN_DELAY_START_OPEN_GRIPPER, MIN_DELAY_OPEN_GRIPPER])),
-                                     high=np.float32(np.array([R_WORKSPACE, R_WORKSPACE, X_BUCKET_MAX, Y_BUCKET_MAX, MAX_DELAY_START_OPEN_GRIPPER, MAX_DELAY_OPEN_GRIPPER])),
-                                     shape=(6,), dtype=np.float32)
+        # Set the context space (x_object, y_object, x_bucket, y_bucket)
+        self.observation_space = Box(low=np.float32(np.array([self.x_min, self.y_min, self.x_min, 0])),
+                                     high=np.float32(np.array([self.x_max, self.y_max, self.x_max, self.y_max])),
+                                     shape=(4,), dtype=np.float32)
 
         # Set the action space (y_release, speed, z_target, y_target)
-        low = np.float32(np.array([-R_WORKSPACE, MIN_SPEED_FOR_THROW, 0.06, -R_WORKSPACE]))
-        high = np.float32(np.array([R_WORKSPACE, MAX_SPEED_FLEXPICKER, Z_WORKSPACE, R_WORKSPACE]))
+        low = np.float32(np.array([self.y_min, MIN_SPEED_FOR_THROW, self.z_min, self.y_min]))
+        high = np.float32(np.array([self.y_max, MAX_SPEED_FLEXPICKER, self.z_max, self.y_max]))
         self.action_normalizer = utils.ActionSpaceNormalizer(low, high)
         low_n = self.action_normalizer.normalize(low)
         high_n = self.action_normalizer.normalize(high)
@@ -104,63 +95,73 @@ class TossingFlexpicker(Env):
         # Load the conveyor and the buckets
         self.load_conveyor_and_bucket()
 
+        # Load the object and the robot
+        self.load_object_and_robot()
+
+        self._p.resetDebugVisualizerCamera(cameraDistance=2.5, cameraYaw=-0, cameraPitch=-35, cameraTargetPosition=[0,0,0])
+        # create the variables for the toss and the reward associated urdf
+        self.throw_and_reward_variable()
+
+    def load_conveyor_and_bucket(self):
+        if self.domain_randomization:
+            place_position_x = random.uniform(self.x_min, self.x_max)
+            self.random_y_conveyor = random.uniform(-self.y_max, 0)
+            place_position_y = self.y_max + self.random_y_conveyor
+            place_position_z = 0.15
+            self.bucket_place_position = (place_position_x, place_position_y, place_position_z)
+            self.conv_id = self._p.loadURDF("urdf/convoyer.urdf", [0,-CONVEYOR_WIDTH/2 + self.y_max - 0.1 + self.random_y_conveyor,-CONVEYOR_HEIGHT])
+        else:
+            place_position_x = random.uniform(self.x_min, self.x_max)
+            place_position_y = self.y_max
+            place_position_z = 0.15
+            self.bucket_place_position = (place_position_x, place_position_y, place_position_z) 
+            self.conv_id = self._p.loadURDF("urdf/convoyer.urdf", [0,-CONVEYOR_WIDTH/2 + self.y_max - 0.1,-CONVEYOR_HEIGHT])
+        
+        if self.domain_randomization:
+            bucket_offset_y = self.y_max - 0.04 + BUCKET_LENGTH/2 + self.random_y_conveyor# 0.05 is used to create a gap between the conveyor and the bin to avoid sliding objects
+            bucket_orientation = self._p.getQuaternionFromEuler([0,0,-np.pi/2])
+            bucket_pos = [place_position_x, bucket_offset_y, -CONVEYOR_HEIGHT]
+            self.bucket_id = self._p.loadURDF("urdf/bucket.urdf", bucket_pos, bucket_orientation)
+        else:
+            bucket_offset_y = self.y_max + BUCKET_LENGTH/2 - 0.04 # 0.08 is used to create a gap between the conveyor and the bin to avoid sliding objects
+            bucket_orientation = self._p.getQuaternionFromEuler([0,0,-np.pi/2])
+            bucket_pos = [place_position_x, bucket_offset_y, -CONVEYOR_HEIGHT]
+            self.bucket_id = self._p.loadURDF("urdf/bucket.urdf", bucket_pos, bucket_orientation)
+        
+    def load_object_and_robot(self):
         # Load the object
         if self.domain_randomization:
-            self.object_id = utils.spawn_cube_on_conveyor(conveyor_pos=self.random_y_conveyor, seed=self.seed, physicsClient=self._p)
+            self.object_id = utils.spawn_cube_on_conveyor(conveyor_pos=self.random_y_conveyor, workspace=self.workspace, seed=self.seed, physicsClient=self._p)
         else:
-            self.object_id = utils.spawn_cube_on_conveyor(conveyor_pos=0, seed=self.seed, physicsClient=self._p)
+            self.object_id = utils.spawn_cube_on_conveyor(conveyor_pos=0, workspace=self.workspace, seed=self.seed, physicsClient=self._p)
         self.bucket_pos, _ = self._p.getBasePositionAndOrientation(self.bucket_id)
         self.cube_init_position, cube_orientation = self._p.getBasePositionAndOrientation(self.object_id)
-
+        
         #gripper variable
         if self.domain_randomization:
-            self.delay_start_to_open = random.normalvariate(0.08, 0.005)
-            self.delay_to_open = random.normalvariate(0.171, 0.005)
+            gripper_opening_reaction_time_noise = 0.002
+            gripper_opening_time_noise = 0.005
+            #make it always positive
+            self.noisy_gripper_opening_reaction_time = np.clip(random.normalvariate(self.gripper_opening_reaction_time, gripper_opening_reaction_time_noise), 0, None)
+            self.noisy_gripper_opening_time = np.clip(random.normalvariate(self.gripper_opening_time, gripper_opening_time_noise), 0, None)
         else:
-            self.delay_start_to_open = 0.08
-            self.delay_to_open = 0.171
+            self.noisy_gripper_opening_reaction_time = self.gripper_opening_reaction_time
+            self.noisy_gripper_opening_time = self.gripper_opening_time
 
         # Load the robot
         initial_height_flexpicker = 0.6
-        self.robot =  Flexpicker(delay_to_open=self.delay_to_open, position=self.cube_init_position[:2] +(initial_height_flexpicker,), orientation=p.getQuaternionFromEuler([0,np.pi,cube_orientation[2]-np.pi/2]), GUI=GUI, physicsClient=self._p)
-
-        self._p.resetDebugVisualizerCamera(cameraDistance=2.5, cameraYaw=-0, cameraPitch=-35, cameraTargetPosition=[0,0,0])
+        self.robot =  Flexpicker(gripper_opening_time=self.noisy_gripper_opening_time, position=self.cube_init_position[:2] +(initial_height_flexpicker,), orientation=p.getQuaternionFromEuler([0,np.pi,cube_orientation[2]-np.pi/2]), GUI=self.GUI, physicsClient=self._p)
         self.robot.grasp(self.object_id, self.bucket_place_position)
 
-        # create the variables for the toss and the reward associated urdf
+    def throw_and_reward_variable(self):
+        # reset the variables for the toss and the reward associated
         self.has_thrown = False
         self.init_obs = self.get_observation()
         self.release_position = self.cube_init_position
         self.distance_cube_bucket = np.round(np.linalg.norm(np.array(self.init_obs[:2]) - np.array(self.bucket_place_position[:2])), 3)
-        self.distance_ratio = 0
         self.action_time = 0
+        self.distance_ratio = 0
         self.distance_impact_to_bucket = 0
-
-    def load_conveyor_and_bucket(self):
-        if self.domain_randomization:
-            place_position_x = random.uniform(X_BUCKET_MIN, X_BUCKET_MAX)
-            self.random_y_conveyor = random.uniform(-.5, 0)
-            place_position_y = CONVEYOR_WIDTH/2 + 0.1 + self.random_y_conveyor
-            place_position_z = 0.15
-            self.bucket_place_position = (place_position_x, place_position_y, place_position_z)
-            self.conv_id = self._p.loadURDF("urdf/convoyer.urdf", [0,self.random_y_conveyor,-CONVEYOR_HEIGHT])
-        else:
-            place_position_x = random.uniform(X_BUCKET_MIN, X_BUCKET_MAX)
-            place_position_y = CONVEYOR_WIDTH/2 + 0.1# else bin will be at max range y=0.8
-            place_position_z = 0.15
-            self.bucket_place_position = (place_position_x, place_position_y, place_position_z) 
-            self.conv_id = self._p.loadURDF("urdf/convoyer.urdf", [0,0,-CONVEYOR_HEIGHT])
-        
-        if self.domain_randomization:
-            bucket_offset_y = CONVEYOR_WIDTH/2 + BUCKET_LENGTH/2 + 0.05 + self.random_y_conveyor# 0.05 is used to create a gap between the conveyor and the bin to avoid sliding objects
-            bucket_orientation = self._p.getQuaternionFromEuler([0,0,-np.pi/2])
-            bucket_pos = [place_position_x, bucket_offset_y, -CONVEYOR_HEIGHT]
-            self.bucket_id = self._p.loadURDF("urdf/bucket.urdf", bucket_pos, bucket_orientation)
-        else:
-            bucket_offset_y = CONVEYOR_WIDTH/2 + BUCKET_LENGTH/2 + 0.05 # 0.05 is used to create a gap between the conveyor and the bin to avoid sliding objects
-            bucket_orientation = self._p.getQuaternionFromEuler([0,0,-np.pi/2])
-            bucket_pos = [place_position_x, bucket_offset_y, -CONVEYOR_HEIGHT]
-            self.bucket_id = self._p.loadURDF("urdf/bucket.urdf", bucket_pos, bucket_orientation)
 
     def legal_action(self, action):
         """
@@ -173,8 +174,11 @@ class TossingFlexpicker(Env):
         if action[0] > self.bucket_place_position[1]:
             action[0] =  self.bucket_place_position[1]-epsilon
         
-        if action[2] > Z_WORKSPACE:
-            action[2] = Z_WORKSPACE-epsilon
+        if action[2] > self.z_max:
+            action[2] = self.z_max-epsilon
+        
+        if action[2] < self.z_min:
+            action[2] = self.z_min+epsilon
 
         if action[3] > self.bucket_place_position[1]:
             action[3] =  self.bucket_place_position[1]-epsilon
@@ -192,7 +196,7 @@ class TossingFlexpicker(Env):
 
         self._p.stepSimulation()
         if self.GUI:
-            time.sleep(1./240.)
+            time.sleep(1./1000.)
 
     def step(self, action):
         """
@@ -208,16 +212,16 @@ class TossingFlexpicker(Env):
         m_x = (self.bucket_place_position[0] - init_pos[0]) / (self.bucket_place_position[1] - init_pos[1])
         offset_x = self.bucket_place_position[0] - m_x * self.bucket_place_position[1]
         x_target = m_x * y_target + offset_x
-        if x_target > R_WORKSPACE:
-            x_target = R_WORKSPACE
-            #change z and y to be the intersection between the plane x=R_WORKSPACE and the line between the initial position and the target position
-            z_target = init_pos[2] + (z_target - init_pos[2])/(x_target - init_pos[0])*(R_WORKSPACE - init_pos[0])
-            y_target = init_pos[1] + (y_target - init_pos[1])/(x_target - init_pos[0])*(R_WORKSPACE - init_pos[0])
-        if x_target < -R_WORKSPACE:
-            x_target = -R_WORKSPACE
-            #change z and y to be the intersection between the plane x=-R_WORKSPACE and the line between the initial position and the target position
-            z_target = init_pos[2] + (z_target - init_pos[2])/(x_target - init_pos[0])*(-R_WORKSPACE - init_pos[0])
-            y_target = init_pos[1] + (y_target - init_pos[1])/(x_target - init_pos[0])*(-R_WORKSPACE - init_pos[0])
+        if x_target > self.x_max:
+            x_target = self.x_max
+            #change z and y to be the intersection between the plane x=self.x_max and the line between the initial position and the target position
+            z_target = init_pos[2] + (z_target - init_pos[2])/(x_target - init_pos[0])*(self.x_max - init_pos[0])
+            y_target = init_pos[1] + (y_target - init_pos[1])/(x_target - init_pos[0])*(self.x_max - init_pos[0])
+        if x_target < self.x_min:
+            x_target = self.x_min
+            #change z and y to be the intersection between the plane x=self.x_min and the line between the initial position and the target position
+            z_target = init_pos[2] + (z_target - init_pos[2])/(x_target - init_pos[0])*(self.x_min - init_pos[0])
+            y_target = init_pos[1] + (y_target - init_pos[1])/(x_target - init_pos[0])*(self.x_min - init_pos[0])
         target_pos = (x_target, y_target, z_target)
 
         # compute the target position on the line between the initial position and the release position
@@ -231,16 +235,16 @@ class TossingFlexpicker(Env):
         z_release = m_z*y_release + offset_z
         release_pos = (x_release, y_release, z_release)
         #check that release and target position are in workspace
-        assert release_pos[0] <= R_WORKSPACE and release_pos[0] >= -R_WORKSPACE, "release position x is not in workspace"
-        assert release_pos[1] <= R_WORKSPACE and release_pos[1] >= -R_WORKSPACE, "release position y is not in workspace"
-        assert release_pos[2] <= Z_WORKSPACE and release_pos[2] >= 0, "release position z is not in workspace"
-        assert target_pos[0] <= R_WORKSPACE and target_pos[0] >= -R_WORKSPACE, "target position x is not in workspace"
-        assert target_pos[1] <= R_WORKSPACE and target_pos[1] >= -R_WORKSPACE, "target position y is not in workspace"
-        assert target_pos[2] <= Z_WORKSPACE and target_pos[2] >= 0, "target position z is not in workspace"
+        assert release_pos[0] <= self.x_max and release_pos[0] >= self.x_min, "release position x is not in workspace"
+        assert release_pos[1] <= self.y_max and release_pos[1] >= self.y_min, "release position y is not in workspace"
+        assert release_pos[2] <= self.z_max and release_pos[2] >= self.z_min, "release position z is not in workspace"
+        assert target_pos[0] <= self.x_max and target_pos[0] >= self.x_min, "target position x is not in workspace"
+        assert target_pos[1] <= self.y_max and target_pos[1] >= self.y_min, "target position y is not in workspace"
+        assert target_pos[2] <= self.z_max and target_pos[2] >= self.z_min, "target position z is not in workspace"
 
         # compute yaw
         yaw = np.arcsin(np.dot(np.array(self.bucket_place_position[:2]) - np.array(init_pos[:2]), np.array([0, 1])) / np.linalg.norm(np.array(self.bucket_place_position[:2]) - np.array(init_pos[:2])))
-        if self.bucket_pos[0] < init_pos[0]:
+        if self.bucket_place_position[0] < init_pos[0]:
             yaw = -yaw
         else:
             yaw += np.pi
@@ -252,9 +256,7 @@ class TossingFlexpicker(Env):
         lin_pos, orn, velocities = utils.ctraj_pilz_KDL(init_pos, init_orn, target_pos, target_orn, MAX_SPEED_FLEXPICKER, MAX_ACCELERATION_FLEXPICKER, scaling_factor, 1, MAX_ROT_SPEED, TIME_STEP)
 
         # the gripper opening delay is supposed to be 171ms according to the datasheet 
-        delay = round(self.delay_start_to_open/TIME_STEP)
-        if self.domain_randomization:
-            delay = round(np.random.normal(self.delay_start_to_open, 0.005)/TIME_STEP)
+        delay = round(self.noisy_gripper_opening_reaction_time/TIME_STEP)
         
         self.max_time_step = len(lin_pos)
         for i in range(self.max_time_step):
@@ -352,119 +354,38 @@ class TossingFlexpicker(Env):
         observation: (x_object, y_object, x_bucket, y_bucket)
         """
         position, _ = self._p.getBasePositionAndOrientation(self.object_id)
-        return np.float32(np.array((position[:2] + (self.bucket_pos[0],) + (self.bucket_pos[1],) + (self.delay_start_to_open,) + (self.delay_to_open,))))
+        return np.float32(np.array((position[:2] + (self.bucket_pos[0],) + (self.bucket_pos[1],))))
 
     def reset(self, seed=None, options=None):
         if (self.physicsClientId < 0):
             self.ownsPhysicsClient = True
 
         self.physicsClientId = self._p._client
-        # if statement used to bypass the visual bug with the GUI due to self._p.resetSimulation() 
-        # but with GUI=True there is memory leaks
-        if not self.GUI: 
-            self._p.resetSimulation()
+        # remove all urdf
+        self._p.removeBody(self.object_id)
+        self._p.removeBody(int(self.bucket_id))
+        self._p.removeBody(self.conv_id)
+        self._p.removeBody(self.robot.id)
 
-            # Set the gravity
-            self._p.setAdditionalSearchPath(pybullet_data.getDataPath()) 
-            self._p.setGravity(0,0,-9.81)
+        # reset the max time step
+        self.max_step_simulation = MAX_STEP_SIMULATION
 
-            # reset the max time step
-            self.max_step_simulation = MAX_STEP_SIMULATION
-
-            # select a random seed
-            if seed is not None: 
-                self.seed = seed
-            else:
-                self.seed = np.random.randint(0, MAX_SEED)
-            random.seed(self.seed)
-
-            # Configure debug visualizer flags to remove grid
-            self._p.configureDebugVisualizer(self._p.COV_ENABLE_GUI, 0)
-            self._p.configureDebugVisualizer(self._p.COV_ENABLE_PLANAR_REFLECTION, 0)
-            self.planeId = self._p.loadURDF("plane.urdf", [0,0,-CONVEYOR_HEIGHT])
-
-            # Load the conveyor and the buckets
-            self.load_conveyor_and_bucket()
-
-            # Load the object
-            if self.domain_randomization:
-                self.object_id = utils.spawn_cube_on_conveyor(conveyor_pos=self.random_y_conveyor, seed=self.seed, physicsClient=self._p)
-            else:
-                self.object_id = utils.spawn_cube_on_conveyor(conveyor_pos=0, seed=self.seed, physicsClient=self._p)
-            self.bucket_pos, _ = self._p.getBasePositionAndOrientation(self.bucket_id)
-            self.cube_init_position, cube_orientation = self._p.getBasePositionAndOrientation(self.object_id)
-
-            #gripper variable
-            if self.domain_randomization:
-                self.delay_start_to_open = random.normalvariate(0.08, 0.005)
-                self.delay_to_open = random.normalvariate(0.171, 0.005)
-            else:
-                self.delay_start_to_open = 0.08
-                self.delay_to_open = 0.171
-
-            # Load the robot
-            initial_height_flexpicker = 0.6
-            self.robot =  Flexpicker(delay_to_open=self.delay_to_open, position=self.cube_init_position[:2] +(initial_height_flexpicker,), orientation=self._p.getQuaternionFromEuler([0,np.pi,cube_orientation[2]-np.pi/2]), GUI=self.GUI, physicsClient=self._p)
-            self.robot.grasp(self.object_id, self.bucket_place_position)
-
-            # reset the variables for the toss and the reward associated
-            self.has_thrown = False
-            self.init_obs = self.get_observation()
-            self.release_position = self.cube_init_position
-            self.distance_cube_bucket = np.round(np.linalg.norm(np.array(self.init_obs[:2]) - np.array(self.bucket_place_position[:2])), 3)
-            self.action_time = 0
-            self.distance_impact_to_bucket = 0
+        # select a random seed
+        if seed is not None: 
+            self.seed = seed
         else:
-            # reset the max time step
-            self.max_step_simulation = MAX_STEP_SIMULATION
+            self.seed = np.random.randint(0, MAX_SEED)
+        random.seed(self.seed)
 
-            # select a random seed
-            if seed is not None: 
-                self.seed = seed
-            else:
-                self.seed = np.random.randint(0, MAX_SEED)
-            random.seed(self.seed)
+        # Configure debug visualizer flags to remove grid
+        self._p.configureDebugVisualizer(self._p.COV_ENABLE_GUI, 0)
+        self._p.configureDebugVisualizer(self._p.COV_ENABLE_PLANAR_REFLECTION, 0)
+        self.planeId = self._p.loadURDF("plane.urdf", [0,0,-CONVEYOR_HEIGHT])
 
-            # remove the object and the buckets
-            self._p.removeBody(self.object_id)
-            self._p.removeBody(int(self.bucket_id))
-            self._p.removeBody(self.conv_id)
-
-            # spawn new buckets and object
-            self.load_conveyor_and_bucket()
-
-            # remove the robot
-            self._p.removeBody(self.robot.id)
-
-            # Load the object
-            if self.domain_randomization:
-                self.object_id = utils.spawn_cube_on_conveyor(conveyor_pos=self.random_y_conveyor, seed=self.seed, physicsClient=self._p)
-            else:
-                self.object_id = utils.spawn_cube_on_conveyor(conveyor_pos=0, seed=self.seed, physicsClient=self._p)
-            self.bucket_pos, _ = self._p.getBasePositionAndOrientation(self.bucket_id)
-            self.cube_init_position, cube_orientation = self._p.getBasePositionAndOrientation(self.object_id)
+        self.load_conveyor_and_bucket()
+        self.load_object_and_robot()
+        self.throw_and_reward_variable()
             
-            #gripper variable
-            if self.domain_randomization:
-                self.delay_start_to_open = random.normalvariate(0.08, 0.005)
-                self.delay_to_open = random.normalvariate(0.171, 0.005)
-            else:
-                self.delay_start_to_open = 0.08
-                self.delay_to_open = 0.171
-
-            # Load the robot
-            initial_height_flexpicker = 0.6
-            self.robot =  Flexpicker(delay_to_open=self.delay_to_open, position=self.cube_init_position[:2] +(initial_height_flexpicker,), orientation=p.getQuaternionFromEuler([0,np.pi,cube_orientation[2]-np.pi/2]), GUI=self.GUI, physicsClient=self._p)
-            self.robot.grasp(self.object_id, self.bucket_place_position)
-
-            # reset the variables for the toss and the reward associated
-            self.has_thrown = False
-            self.init_obs = self.get_observation()
-            self.release_position = self.cube_init_position
-            self.distance_cube_bucket = np.round(np.linalg.norm(np.array(self.init_obs[:2]) - np.array(self.bucket_pos[:2])), 3)
-            self.action_time = 0
-            self.distance_ratio = 0
-            self.distance_impact_to_bucket = 0
         return self.get_observation(), {}
 
     def close(self):

@@ -9,7 +9,7 @@ bucket_LENGTH = 0.72
 class UnhandledAgentException(Exception):
     pass
 
-implemented_agents = {"goToBucket", "optim", "sac", "ddpg", "td3", "ppo"}
+implemented_agents = {"pap", "timeOpt", "sac", "ddpg", "td3", "ppo"}
 
 # Define the default agent class
 class Agent(object):
@@ -26,7 +26,7 @@ class Agent(object):
             pass
 
 ## Trivial agent ##
-class goToBucketAgent(Agent):
+class papAgent(Agent):
     """
     The agent will go to the bucket and release the object
     """
@@ -41,7 +41,7 @@ class goToBucketAgent(Agent):
         action = env.action_normalizer.normalize(action)
         return action
     
-class optimAgent(Agent):
+class timeOptAgent(Agent):
     def __init__(self, trainable=False):
         super().__init__(trainable)
 

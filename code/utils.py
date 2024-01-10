@@ -3,7 +3,7 @@ import pybullet as p
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from agent import goToBucketAgent
+from agent import papAgent
 from matplotlib import pyplot as plt
 from tqdm import tqdm
 from PyKDL import get_lin_trajectory
@@ -82,7 +82,7 @@ def _compute_target_joint_velocities(self, target_velocities):
     target_joint_velocities = np.matmul(np.linalg.pinv(jacobian), end_effector_vel).T[0]
     return target_joint_velocities
 
-def spawn_cube_on_conveyor(conveyor_pos, seed=None, physicsClient=None):
+def spawn_cube_on_conveyor(conveyor_pos, workspace, seed=None, physicsClient=None):
     """
     Source: https://github.com/erwincoumans/bullet3/blob/master/examples/pybullet/examples/shiftCenterOfMass.py
     Spawns a cube on the conveyor
@@ -102,11 +102,11 @@ def spawn_cube_on_conveyor(conveyor_pos, seed=None, physicsClient=None):
 
     # spawn the cube at a random location in the workspace of the robot (radius = 0.8m) 
     # and on the conveyor (width = 1.4m and length = 2m) but not too close to the edge (5cm from the edge max) 
-    x = np.random.uniform(np.sqrt(2)*0.75/2, np.sqrt(2)*0.75/2)
-    y = np.random.uniform(np.sqrt(2)*-0.65/2, np.sqrt(2)*(conveyor_pos + 0.65)/2)
+    x = np.random.uniform(workspace['x_min'] + cube_size/2, workspace['x_max'] - cube_size/2)
+    y = np.random.uniform(workspace['y_min'] + cube_size/2 + conveyor_pos, workspace['y_max'] - 0.1 - cube_size/2 + conveyor_pos)
     z = cube_size/2
     
-    mass = np.random.uniform(0.1, 2)
+    mass = np.random.uniform(0.01, 0.3)
 
     visualShapeId = physicsClient.createVisualShape(shapeType=p.GEOM_MESH,
                                         fileName="cube.obj",
@@ -148,7 +148,7 @@ class PickAndPlaceReward(nn.Module):
     '''
     def __init__(self):
         super(PickAndPlaceReward, self).__init__()
-        self.fc1 = nn.Linear(6, 100)
+        self.fc1 = nn.Linear(4, 100)
         self.fc2 = nn.Linear(100, 100)
         self.fc3 = nn.Linear(100, 1)
 
@@ -167,7 +167,7 @@ class PickAndPlaceReward(nn.Module):
         self.to(device)
         optimizer = torch.optim.Adam(self.parameters(), lr=0.0001)
         loss_fn = nn.MSELoss()
-        agent = goToBucketAgent()
+        agent = papAgent()
         losses = []
         for episode in range(episodes):
             env.reset()
@@ -199,7 +199,7 @@ class PickAndPlaceReward(nn.Module):
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         print("Using device: {}".format(device))
         self.to(device)
-        agent = goToBucketAgent()
+        agent = papAgent()
         errors = []
         pbar = tqdm(total=episodes)
         for episode in range(episodes):

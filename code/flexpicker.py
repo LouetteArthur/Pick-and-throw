@@ -4,7 +4,7 @@ import numpy as np
 from collections import namedtuple
 
 class Flexpicker:
-    def __init__(self, delay_to_open, position=[0,0,1], orientation=p.getQuaternionFromEuler([0,3.141,0]),GUI=True, physicsClient=None):
+    def __init__(self, gripper_opening_time, position=[0,0,1], orientation=p.getQuaternionFromEuler([0,3.141,0]),GUI=True, physicsClient=None):
         # The flexpicker is only represented by a gripper for now
         self._p = physicsClient
         self.id = self._p.loadURDF("urdf/flexpicker.urdf", position, orientation)
@@ -14,7 +14,7 @@ class Flexpicker:
         self.gripper_range = [0, 0.04]
         self.end_effector_id = 6
         self.GUI = GUI
-        self.delay_to_open = delay_to_open
+        self.gripper_opening_time = gripper_opening_time
 
     def __parse_joint_info__(self):
         numJoints = self._p.getNumJoints(self.id)
@@ -52,7 +52,7 @@ class Flexpicker:
         while not self.is_gripper_open():
             self._p.stepSimulation()
             if self.GUI:
-                time.sleep(1./240.)
+                time.sleep(1./1000.)
         init_pos, _ = self._p.getBasePositionAndOrientation(object_id)
         position_to_grasp = tuple(list(init_pos) + np.array([0, 0, 0.1]))
         self.move(position_to_grasp + (self._p.getBasePositionAndOrientation(object_id)[0][2]-np.pi/2,), "position")
@@ -61,7 +61,7 @@ class Flexpicker:
         while not self.is_gripper_closed(object_id):
             self._p.stepSimulation()
             if self.GUI:
-                time.sleep(1./240.)
+                time.sleep(1./1000.)
 
         # compute yaw
         yaw = np.arcsin(np.dot(np.array(bucket_place_position[:2]) - np.array(init_pos[:2]), np.array([0, 1])) / np.linalg.norm(np.array(bucket_place_position[:2]) - np.array(init_pos[:2])))
@@ -76,7 +76,7 @@ class Flexpicker:
         while abs(self._p.getBasePositionAndOrientation(object_id)[0][2] - object_approach_position) > 0.005 and abs(self._p.getBasePositionAndOrientation(object_id)[1][2] - yaw) > 0.005:
             self._p.stepSimulation()
             if self.GUI:
-                time.sleep(1./240.)
+                time.sleep(1./1000.)
         self.grasp = True
 
     def release(self):
@@ -118,7 +118,7 @@ class Flexpicker:
 
     def move_gripper(self, open_length):
         # open the gripper to a given length
-        max_velocity = self.gripper_range[1] / self.delay_to_open
+        max_velocity = self.gripper_range[1] / self.gripper_opening_time
         self._p.setJointMotorControl2(self.id, 7, self._p.POSITION_CONTROL, open_length, force=self.joints[7].maxForce, maxVelocity=max_velocity)
         self._p.setJointMotorControl2(self.id, 8, self._p.POSITION_CONTROL, -open_length, force=self.joints[8].maxForce, maxVelocity=max_velocity)
 

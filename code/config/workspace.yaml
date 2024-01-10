@@ -1,0 +1,9 @@
+workspace:
+  x_min: -0.38 # minimum x coordinate of the workspace [m]
+  x_max: 0.48 # maximum x coordinate of the workspace [m]
+  y_min: -0.62 # minimum y coordinate of the workspace [m]
+  y_max: 0.6 # maximum y coordinate of the workspace [m]
+  z_min: 0.08 # minimum z coordinate of the workspace [m]
+  z_max: 0.18 # maximum z coordinate of the workspace [m]
+  gripper_opening_reaction_time: 0.01 # The time it takes for the gripper to initiate the opening motion [s]
+  gripper_opening_time: 0.171 # The time it takes for the gripper to fully open [s]

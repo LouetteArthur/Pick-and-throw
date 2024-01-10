@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 from scipy.stats import linregress
 import pandas as pd
 
-def agent_control(GUI=False, agent_name='goToBucket', model=None, episodes=10, verbose=False, reward_name='success', seed=None, save_data=None, domain_randomization=False):
+def agent_control(GUI=False, agent_name='pap', model=None, episodes=10, verbose=False, reward_name='success', seed=None, save_data=None, domain_randomization=False):
     # fix random seed
     if seed is not None:
         env = TossingFlexpicker(GUI=GUI, reward_name=reward_name, seed=seed, domain_randomization=domain_randomization)
@@ -92,7 +92,7 @@ if __name__ == '__main__':
     # Parse arguments
     parser = argparse.ArgumentParser()
     # Mode: user (the user control the robot) or agent (an intelligent agent control the robot)
-    parser.add_argument('-a', '--agent', type=str, default='goToBucket', help='the agent to control the gripper')
+    parser.add_argument('-a', '--agent', type=str, default='pap', help='the agent to control the gripper')
     # Number of episodes
     parser.add_argument('-e', '--episodes', type=int, default=1, help='number of episodes')
     # GUI or direct mode
