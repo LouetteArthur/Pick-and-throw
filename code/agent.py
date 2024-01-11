@@ -47,8 +47,8 @@ class timeOptAgent(Agent):
 
     def act(self, env):
         error = 0.001
-        pos_obj = env._p.getLinkState(env.robot.id, env.robot.end_effector_id)[0]
-        x_r, y_r, z_r, v = main(pos_obj, env.bucket_place_position[:2] + (0.07, ), error)
+        pos_obj = tuple(env.init_obs[:2]) + (0.08,)
+        x_r, y_r, z_r, v = main(pos_obj, env.bucket_place_position[:2] + (0.08, ), error)
         action = [y_r, v, 2*z_r-pos_obj[2], 2*y_r - pos_obj[1]]
         action = env.action_normalizer.normalize(action)
         return np.float32(action)

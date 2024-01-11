@@ -235,7 +235,6 @@ class TossingFlexpicker(Env):
         z_release = m_z*y_release + offset_z
         release_pos = (x_release, y_release, z_release)
         #check that release and target position are in workspace
-        print(release_pos, target_pos)
         assert release_pos[0] <= self.x_max and release_pos[0] >= self.x_min, "release position x is not in workspace"
         assert release_pos[1] <= self.y_max and release_pos[1] >= self.y_min, "release position y is not in workspace"
         assert release_pos[2] <= self.z_max and release_pos[2] >= self.z_min, "release position z is not in workspace"
@@ -255,10 +254,31 @@ class TossingFlexpicker(Env):
         self.speed = self.action[1]
         scaling_factor = self.action[1]/MAX_SPEED_FLEXPICKER
         lin_pos, orn, velocities = utils.ctraj_pilz_KDL(init_pos, init_orn, target_pos, target_orn, MAX_SPEED_FLEXPICKER, MAX_ACCELERATION_FLEXPICKER, scaling_factor, 1, MAX_ROT_SPEED, TIME_STEP)
-
-        # the gripper opening delay is supposed to be 171ms according to the datasheet 
+        # plt.plot(np.sqrt(velocities[:, 0]**2+velocities[:, 1]**2+velocities[:, 2]**2))
+        # #plot a an horizontal line at the desired action speed of the robot
+        # plt.plot(np.ones(velocities.shape[0])*self.action[2])
+        # plt.show()
+        # #plot in 3D the trajectory
+        # fig = plt.figure()
+        # ax = fig.add_subplot(111, projection='3d')
+        # ax.plot(lin_pos[:, 0], lin_pos[:, 1], lin_pos[:, 2])
+        # #plot the target position
+        # ax.scatter(target_pos[0], target_pos[1], target_pos[2], c='r', marker='o')
+        # #plot the release position
+        # ax.scatter(release_pos[0], release_pos[1], release_pos[2], c='g', marker='o')
+        # #plot the initial position
+        # ax.scatter(init_pos[0], init_pos[1], init_pos[2], c='b', marker='o')
+        # #plot the bucket position
+        # ax.scatter(self.bucket_place_position[0], self.bucket_place_position[1], 0.15, c='y', marker='o')
+        # #plot the trajectory of the object from release position following a ballistic motion until it hits the ground
+        # t = np.linspace(0, 1, 100)
+        # x = release_pos[0] + velocities[int((velocities.shape[0])/2)][0]*t
+        # y = release_pos[1] + velocities[int((velocities.shape[0])/2)][1]*t
+        # z = release_pos[2] + velocities[int((velocities.shape[0])/2)][2]*t - 0.5*9.81*t**2
+        # ax.plot(x, y, z)
+        # ax.set_box_aspect([1,1,1])
+        # print("desired action after orocos calculation", lin_pos[-1] + (np.linalg.norm(velocities[-1][:3]),))
         delay = round(self.noisy_gripper_opening_reaction_time/TIME_STEP)
-        
         self.max_time_step = len(lin_pos)
         for i in range(self.max_time_step):
             speed = np.concatenate((velocities[i][:3], [velocities[i][5]]))
@@ -294,7 +314,6 @@ class TossingFlexpicker(Env):
             self.has_thrown = True
             self.release_position, _ = self._p.getBasePositionAndOrientation(self.object_id)
             self.distance_release = np.round(np.linalg.norm(np.array(self.release_position[:2]) - np.array(self.init_obs[:2])), 3)
-
         # wait for the object to fall
         terminated = False
         while not terminated:
@@ -302,7 +321,6 @@ class TossingFlexpicker(Env):
                 self.step_simulation()
             self.distance_ratio = np.clip(self.distance_release/self.distance_cube_bucket, 0, 1)
             reward, terminated = self.get_reward_and_is_terminated()
-
         return self.get_observation(), reward, terminated, False, {"is_success": self.success(), "action_time": np.round(self.action_time, 3), "distance_ratio": self.distance_ratio, "distance_impact": self.distance_impact_to_bucket}
     
 
