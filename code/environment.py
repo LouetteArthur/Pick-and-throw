@@ -18,7 +18,7 @@ MIN_SPEED_FOR_THROW =0.25
 MAX_ACCELERATION_FLEXPICKER = 100
 
 #Simulation parameters
-TIME_STEP = 1/1000
+TIME_STEP = 1./240.
 MAX_SEED = 100000000
 BUCKET_WIDTH = 0.21
 CONVEYOR_WIDTH = 1.4
@@ -196,7 +196,7 @@ class TossingFlexpicker(Env):
 
         self._p.stepSimulation()
         if self.GUI:
-            time.sleep(1./1000.)
+            time.sleep(1./240.)
 
     def step(self, action):
         """
@@ -207,8 +207,8 @@ class TossingFlexpicker(Env):
 
         # compute the release position
         init_pos, init_orn = self._p.getLinkState(self.robot.id, self.robot.end_effector_id)[0:2]
-        z_target = action[2]
-        y_target = action[3]
+        z_target = self.action[2]
+        y_target = self.action[3]
         m_x = (self.bucket_place_position[0] - init_pos[0]) / (self.bucket_place_position[1] - init_pos[1])
         offset_x = self.bucket_place_position[0] - m_x * self.bucket_place_position[1]
         x_target = m_x * y_target + offset_x
@@ -225,7 +225,7 @@ class TossingFlexpicker(Env):
         target_pos = (x_target, y_target, z_target)
 
         # compute the target position on the line between the initial position and the release position
-        y_release = action[0]
+        y_release = self.action[0]
         if y_release > y_target:
             y_release = y_target - 0.01
 
@@ -235,6 +235,7 @@ class TossingFlexpicker(Env):
         z_release = m_z*y_release + offset_z
         release_pos = (x_release, y_release, z_release)
         #check that release and target position are in workspace
+        print(release_pos, target_pos)
         assert release_pos[0] <= self.x_max and release_pos[0] >= self.x_min, "release position x is not in workspace"
         assert release_pos[1] <= self.y_max and release_pos[1] >= self.y_min, "release position y is not in workspace"
         assert release_pos[2] <= self.z_max and release_pos[2] >= self.z_min, "release position z is not in workspace"
@@ -251,8 +252,8 @@ class TossingFlexpicker(Env):
 
         # compute linear trajectory
         target_orn = self._p.getQuaternionFromEuler([0,0,yaw])
-        self.speed = action[1]
-        scaling_factor = action[1]/MAX_SPEED_FLEXPICKER
+        self.speed = self.action[1]
+        scaling_factor = self.action[1]/MAX_SPEED_FLEXPICKER
         lin_pos, orn, velocities = utils.ctraj_pilz_KDL(init_pos, init_orn, target_pos, target_orn, MAX_SPEED_FLEXPICKER, MAX_ACCELERATION_FLEXPICKER, scaling_factor, 1, MAX_ROT_SPEED, TIME_STEP)
 
         # the gripper opening delay is supposed to be 171ms according to the datasheet 
@@ -265,7 +266,7 @@ class TossingFlexpicker(Env):
             self.robot.move(action, control_method='position')
             self.step_simulation()
             # throw the object when the position is reached + The gripper openning delay
-            pos = lin_pos[i]
+            pos = self._p.getBasePositionAndOrientation(self.object_id)[0]
             if not self.has_thrown and pos[1] > release_pos[1]:
                 delay -= 1
                 if not delay:
@@ -273,7 +274,7 @@ class TossingFlexpicker(Env):
                     self.robot.release()
                     self.has_thrown = True
                     self.release_position, _ = self._p.getBasePositionAndOrientation(self.object_id)
-                    self.distance_release = np.round(np.linalg.norm(np.array(self.release_position[:2]) - np.array(self.cube_init_position[:2])), 3)
+                    self.distance_release = np.round(np.linalg.norm(np.array(self.release_position[:2]) - np.array(self.init_obs[:2])), 3)
 
             if self.has_thrown:
                 self.distance_ratio = np.clip(self.distance_release/self.distance_cube_bucket, 0, 1)
@@ -292,7 +293,7 @@ class TossingFlexpicker(Env):
             self.robot.release()
             self.has_thrown = True
             self.release_position, _ = self._p.getBasePositionAndOrientation(self.object_id)
-            self.distance_release = np.round(np.linalg.norm(np.array(self.release_position[:2]) - np.array(self.cube_init_position[:2])), 3)
+            self.distance_release = np.round(np.linalg.norm(np.array(self.release_position[:2]) - np.array(self.init_obs[:2])), 3)
 
         # wait for the object to fall
         terminated = False
@@ -354,18 +355,24 @@ class TossingFlexpicker(Env):
         observation: (x_object, y_object, x_bucket, y_bucket)
         """
         position, _ = self._p.getBasePositionAndOrientation(self.object_id)
-        return np.float32(np.array((position[:2] + (self.bucket_pos[0],) + (self.bucket_pos[1],))))
+        return np.float32(np.array((position[:2] + (self.bucket_place_position[0],) + (self.bucket_place_position[1],))))
 
     def reset(self, seed=None, options=None):
         if (self.physicsClientId < 0):
             self.ownsPhysicsClient = True
 
         self.physicsClientId = self._p._client
-        # remove all urdf
-        self._p.removeBody(self.object_id)
-        self._p.removeBody(int(self.bucket_id))
-        self._p.removeBody(self.conv_id)
-        self._p.removeBody(self.robot.id)
+        if self.GUI:
+            # remove all urdf
+            self._p.removeBody(self.object_id)
+            self._p.removeBody(int(self.bucket_id))
+            self._p.removeBody(self.conv_id)
+            self._p.removeBody(self.robot.id)
+        else :
+            self._p.resetSimulation()
+            self._p.setGravity(0,0,-9.81)
+            self._p.setAdditionalSearchPath(pybullet_data.getDataPath()) 
+            self.planeId = self._p.loadURDF("plane.urdf", [0,0,-CONVEYOR_HEIGHT])
 
         # reset the max time step
         self.max_step_simulation = MAX_STEP_SIMULATION

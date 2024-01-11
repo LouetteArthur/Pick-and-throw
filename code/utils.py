@@ -106,7 +106,7 @@ def spawn_cube_on_conveyor(conveyor_pos, workspace, seed=None, physicsClient=Non
     y = np.random.uniform(workspace['y_min'] + cube_size/2 + conveyor_pos, workspace['y_max'] - 0.1 - cube_size/2 + conveyor_pos)
     z = cube_size/2
     
-    mass = np.random.uniform(0.01, 0.3)
+    mass = np.random.uniform(0.01, 0.5)
 
     visualShapeId = physicsClient.createVisualShape(shapeType=p.GEOM_MESH,
                                         fileName="cube.obj",
