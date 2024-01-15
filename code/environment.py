@@ -88,6 +88,7 @@ class TossingFlexpicker(Env):
         self._p.configureDebugVisualizer(self._p.COV_ENABLE_GUI, 0)
         self._p.configureDebugVisualizer(self._p.COV_ENABLE_PLANAR_REFLECTION, 0)
         self.planeId = self._p.loadURDF("plane.urdf", [0,0,-CONVEYOR_HEIGHT])
+        self._p.resetDebugVisualizerCamera(cameraDistance=1.5, cameraYaw=-0, cameraPitch=-35, cameraTargetPosition=[0,0,0])
 
         # Randomized Environment
         self.domain_randomization = domain_randomization
@@ -98,7 +99,6 @@ class TossingFlexpicker(Env):
         # Load the object and the robot
         self.load_object_and_robot()
 
-        self._p.resetDebugVisualizerCamera(cameraDistance=2.5, cameraYaw=-0, cameraPitch=-35, cameraTargetPosition=[0,0,0])
         # create the variables for the toss and the reward associated urdf
         self.throw_and_reward_variable()
 
@@ -276,8 +276,8 @@ class TossingFlexpicker(Env):
         # y = release_pos[1] + velocities[int((velocities.shape[0])/2)][1]*t
         # z = release_pos[2] + velocities[int((velocities.shape[0])/2)][2]*t - 0.5*9.81*t**2
         # ax.plot(x, y, z)
-        # ax.set_box_aspect([1,1,1])
         # print("desired action after orocos calculation", lin_pos[-1] + (np.linalg.norm(velocities[-1][:3]),))
+        # plt.show()
         delay = round(self.noisy_gripper_opening_reaction_time/TIME_STEP)
         self.max_time_step = len(lin_pos)
         for i in range(self.max_time_step):
