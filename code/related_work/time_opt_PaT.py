@@ -5,8 +5,7 @@ import argparse
 import sys
 from pytransform3d.transformations import transform_from_pq, invert_transform
 from pytransform3d.rotations import matrix_from_axis_angle, quaternion_from_matrix
-
-RADIUS_WORKSPACE = 0.8
+import yaml
 
 
 def compute_optimal_release(x0, z0, xf, zf, max_distance, error):
@@ -17,10 +16,10 @@ def compute_optimal_release(x0, z0, xf, zf, max_distance, error):
         distance = np.linalg.norm(x[2:]-[x0, z0])
         return 2*distance/x[0] + x[0]/x[1] + x[1]/J
     
-    bounds=[(eps, 10),
-            (eps,100),
-            (x0, max_distance),
-            (z0, 0.18)]
+    bounds=[(eps, 10), #speed
+            (eps,100), #acceleration
+            (x0, max_distance), #x
+            (z0, 0.08 + (0.18+0.08)/2)] #z
 
     def constraint1(x):
         return x[0]/x[1] - x[0]/J
@@ -69,45 +68,56 @@ def transform(p0, pf):
     # Compute the transformation matrix from frame A to frame B
     T_AB = transform_from_pq(pq)
     return T_AB
-
-def line_circle_intersection(p0, pf, circle_center, radius):
+    
+def line_rectangle_intersection(p0, pf, x_min, x_max, y_min, y_max):
     x1, y1 = p0
     x2, y2 = pf
-    h, k = circle_center
-
     # Compute the coefficients of the line equation
     m = (y2 - y1) / (x2 - x1)
     c = y1 - m * x1
 
-    # Compute the coefficients of the quadratic equation
-    a = 1 + m**2
-    b = 2 * (m * c - m * k - h)
-    c = h**2 + (c - k)**2 - radius**2
+    # Compute the intersection points with the vertical lines
+    x_left = x_min
+    y_left = m * x_left + c
+    x_right = x_max
+    y_right = m * x_right + c
 
-    # Solve the quadratic equation
-    delta = b**2 - 4 * a * c
-    if delta < 0:
-        # The line and circle do not intersect
-        return []
-    elif delta == 0:
-        # The line is tangent to the circle
-        x = -b / (2 * a)
-        return [(x, m * x + c)]
-    else:
-        # The line intersects the circle at two points
-        x1 = (-b + np.sqrt(delta)) / (2 * a)
-        x2 = (-b - np.sqrt(delta)) / (2 * a)
-        return [(x1, m * x1 + c), (x2, m * x2 + c)]
+    # Compute the intersection points with the horizontal lines
+    y_bottom = y_min
+    x_bottom = (y_bottom - c) / m
+    y_top = y_max
+    x_top = (y_top - c) / m
+
+    # Find the intersection points that are inside the rectangle
+    intersections = []
+    if x_left >= x_min and x_left <= x_max and y_left >= y_min and y_left <= y_max:
+        intersections.append((x_left, y_left))
+    if x_right >= x_min and x_right <= x_max and y_right >= y_min and y_right <= y_max:
+        intersections.append((x_right, y_right))
+    if x_bottom >= x_min and x_bottom <= x_max and y_bottom >= y_min and y_bottom <= y_max:
+        intersections.append((x_bottom, y_bottom))
+    if x_top >= x_min and x_top <= x_max and y_top >= y_min and y_top <= y_max:
+        intersections.append((x_top, y_top))
+
+    return intersections
+
+def read_workspace():
+        # read the boundaries of the workspace in the config file (yaml)
+        with open("config/workspace.yaml", 'r') as workspace_file:
+            workspace = yaml.safe_load(workspace_file)
+
+        workspace = workspace['workspace']
+        return workspace
 
 def main (p0, pf, error):
-    intersections = line_circle_intersection(p0[:2], pf[:2], [0,0], RADIUS_WORKSPACE)
+    workspace = read_workspace()
+    intersections = line_rectangle_intersection(p0[:2], pf[:2], workspace['x_min'], workspace['x_max'], workspace['y_min'], workspace['y_max'])
     if len(intersections) < 2:
         print("Less than 2 intersections")
         sys.exit()
     for i in intersections:
-        if i[1] < p0[1]:
-            pass # this intersection is not interesting
-        max_distance = np.linalg.norm(np.array(i) - p0[:2])
+        if i[1] > p0[1]:
+            max_distance = np.linalg.norm(np.array(i) - p0[:2])
 
     T = transform(p0, pf)
     T_inv = invert_transform(T)
@@ -125,9 +135,9 @@ def main (p0, pf, error):
     return np.append(pr_in_robot_frame[:3], v).tolist()
     
 if __name__ == "__main__":
-    p0 = np.array([-0.4, 0.4, 0.06])
-    pf = np.array([1, 1, 0])
+    p0 = np.array([-0.2, 0.2, 0.085])
+    pf = np.array([0.6, 0.7, 0.085])
     error = 0.01
 
-    main(p0, pf, error)
+    print(main(p0, pf, error))
 

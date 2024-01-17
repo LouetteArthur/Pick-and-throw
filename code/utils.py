@@ -209,7 +209,7 @@ class PickAndPlaceReward(nn.Module):
                 observation = np.array(env.init_obs)
                 observation = torch.tensor(np.array(observation), dtype=torch.float32).to(device)
                 action = agent.act(env)
-                _, _, done, info = env.step(action)
+                _, _, done,_, info = env.step(action)
                 action_time = torch.tensor(np.array(info['action_time'], dtype=np.float32)).unsqueeze(0).to(device)
                 pred = self.forward(observation)
                 error = (abs(pred - action_time)).item()

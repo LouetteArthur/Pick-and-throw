@@ -7,3 +7,4 @@ workspace:
   z_max: 0.18 # maximum z coordinate of the workspace [m]
   gripper_opening_reaction_time: 0.01 # The time it takes for the gripper to initiate the opening motion [s]
   gripper_opening_time: 0.171 # The time it takes for the gripper to fully open [s]
+  offset_z : -1.498 # The offset of the z coordinate of the workspace [mm]
