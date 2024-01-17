@@ -66,8 +66,7 @@ if __name__ == '__main__':
     # initialize wandb
     run = wandb.init(
     project="Tossing Flexpicker",
-    # We pass a run name (otherwise it’ll be randomly assigned, like sunshine-lollypop-10)
-    name=f"exp_{agent_name}_{hyperparams_name}",
+    name=f"{agent_name}_{hyperparams_name}_{episodes/1000}k",
     config=config,
     sync_tensorboard=True,  # auto-upload sb3's tensorboard metrics
     )
